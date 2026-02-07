@@ -1,572 +1,868 @@
 # AGENTS
 
-## Bible Verse App — Architecture Document
-
-### Overview
-
-A SwiftUI Bible verse app for iOS 17+ that fetches verses from **bible-api.com**, presents them with beautiful typography, and allows users to save favorites, discover random verses, and share them as styled cards. Built with MVVM, Swift Concurrency, and SwiftData persistence.
-
----
-
-## 1. File & Folder Structure
-
-```
-Bible App/
-├── Bible_AppApp.swift                  # App entry point, SwiftData container setup
-│
-├── Models/
-│   ├── BibleResponse.swift             # API response model (Codable)
-│   ├── Verse.swift                     # Individual verse model (Codable)
-│   └── FavoriteVerse.swift             # SwiftData @Model for local persistence
-│
-├── Services/
-│   ├── BibleAPIClient.swift            # Network layer — async/await API calls
-│   └── DailyVerseService.swift         # Logic for daily verse selection & caching
-│
-├── ViewModels/
-│   ├── DailyVerseViewModel.swift       # Drives the home/daily verse screen
-│   ├── RandomVerseViewModel.swift      # Drives the random verse screen
-│   ├── SearchViewModel.swift           # Drives the search screen
-│   ├── FavoritesViewModel.swift        # Drives the favorites list
-│   └── SettingsViewModel.swift         # Drives settings/preferences
-│
-├── Views/
-│   ├── MainTabView.swift               # Root TabView with all tabs
-│   ├── DailyVerse/
-│   │   └── DailyVerseView.swift        # Home screen — verse of the day
-│   ├── RandomVerse/
-│   │   └── RandomVerseView.swift       # Random verse with shuffle animation
-│   ├── Search/
-│   │   ├── SearchView.swift            # Search input + results
-│   │   └── SearchResultView.swift      # Single search result row
-│   ├── Favorites/
-│   │   ├── FavoritesView.swift         # List of saved favorites
-│   │   └── FavoriteRowView.swift       # Single favorite row
-│   ├── Settings/
-│   │   └── SettingsView.swift          # Settings screen
-│   └── Shared/
-│       ├── VerseCardView.swift         # Reusable large verse card component
-│       ├── VerseShareView.swift        # Rendered card for share sheet
-│       ├── LoadingView.swift           # Animated loading indicator
-│       └── ErrorView.swift             # Reusable error state with retry
-│
-├── Theme/
-│   ├── AppTheme.swift                  # Colors, fonts, spacing constants
-│   └── Color+Extensions.swift          # Custom Color definitions
-│
-├── Extensions/
-│   ├── String+Trimming.swift           # Whitespace/newline cleanup for verse text
-│   └── View+ShareSheet.swift           # UIActivityViewController bridge
-│
-├── Assets.xcassets/
-│   ├── AccentColor.colorset/           # Accent color (warm gold)
-│   ├── AppIcon.appiconset/             # App icon
-│   ├── Colors/                         # Named color sets
-│   │   ├── CardBackground.colorset/
-│   │   ├── PrimaryText.colorset/
-│   │   ├── SecondaryText.colorset/
-│   │   └── AccentGold.colorset/
-│   └── Contents.json
-│
-└── Preview Content/
-    └── PreviewData.swift               # Mock data for SwiftUI previews
-```
-
----
-
-## 2. Data Models
-
-### 2.1 API Response Models
-
-```
-┌─────────────────────────────────────────────┐
-│ BibleResponse                    (Codable)  │
-├─────────────────────────────────────────────┤
-│ + reference: String                         │
-│ + verses: [VerseEntry]                      │
-│ + text: String                              │
-│ + translationId: String                     │
-│ + translationName: String                   │
-│ + translationNote: String                   │
-└─────────────────────────────────────────────┘
-          │
-          │ contains
-          ▼
-┌─────────────────────────────────────────────┐
-│ VerseEntry                       (Codable)  │
-├─────────────────────────────────────────────┤
-│ + bookId: String                            │
-│ + bookName: String                          │
-│ + chapter: Int                              │
-│ + verse: Int                                │
-│ + text: String                              │
-└─────────────────────────────────────────────┘
-```
-
-**Coding Keys Mapping:**
-
-| JSON Key           | Swift Property    |
-| ------------------ | ----------------- |
-| `reference`        | `reference`       |
-| `verses`           | `verses`          |
-| `text`             | `text`            |
-| `translation_id`   | `translationId`   |
-| `translation_name` | `translationName` |
-| `translation_note` | `translationNote` |
-| `book_id`          | `bookId`          |
-| `book_name`        | `bookName`        |
-| `chapter`          | `chapter`         |
-| `verse`            | `verse`           |
-
-### 2.2 Persistence Model (SwiftData)
-
-```
-┌─────────────────────────────────────────────┐
-│ FavoriteVerse               (@Model class)  │
-├─────────────────────────────────────────────┤
-│ + id: UUID                                  │
-│ + reference: String                         │
-│ + text: String                              │
-│ + bookName: String                          │
-│ + chapter: Int                              │
-│ + verse: Int                                │
-│ + translationName: String                   │
-│ + savedAt: Date                             │
-└─────────────────────────────────────────────┘
-```
-
-- Uses SwiftData `@Model` macro for automatic persistence
-- ModelContainer configured in `Bible_AppApp.swift` with schema: `[FavoriteVerse.self]`
-- Queried in views via `@Query` property wrapper
-
-### 2.3 Settings Model (UserDefaults via AppStorage)
-
-| Key                   | Type   | Default    |
-| --------------------- | ------ | ---------- |
-| `selectedTranslation` | String | `"web"`    |
-| `appearanceMode`      | String | `"system"` |
-| `fontSize`            | Double | `20.0`     |
-| `showVerseNumbers`    | Bool   | `true`     |
-
-Stored via `@AppStorage` directly in `SettingsView` and read by `VerseCardView`.
-
----
-
-## 3. Service Layer Design
-
-### 3.1 BibleAPIClient
-
-A stateless struct with `static` async methods. No singleton needed.
-
-```
-┌──────────────────────────────────────────────────────┐
-│ BibleAPIClient                           (struct)    │
-├──────────────────────────────────────────────────────┤
-│ - baseURL = "https://bible-api.com"                  │
-├──────────────────────────────────────────────────────┤
-│ + fetchVerse(reference: String,                      │
-│              translation: String) async throws       │
-│   -> BibleResponse                                   │
-│                                                      │
-│ + fetchRandomVerse(translation: String) async throws │
-│   -> BibleResponse                                   │
-├──────────────────────────────────────────────────────┤
-│ Errors:                                              │
-│ - BibleAPIError.invalidURL                           │
-│ - BibleAPIError.networkError(Error)                  │
-│ - BibleAPIError.decodingError(Error)                 │
-│ - BibleAPIError.httpError(statusCode: Int)            │
-│ - BibleAPIError.notFound                             │
-└──────────────────────────────────────────────────────┘
-```
-
-**URL Construction:**
-
-- Verse lookup: `GET https://bible-api.com/{reference}?translation={id}`
-- Random verse: `GET https://bible-api.com/?random=verse&translation={id}`
-
-Reference strings are URL-encoded (spaces become `+` or `%20`).
-
-### 3.2 DailyVerseService
-
-Ensures one verse per calendar day, cached in UserDefaults.
-
-```
-┌──────────────────────────────────────────────────────┐
-│ DailyVerseService                        (struct)    │
-├──────────────────────────────────────────────────────┤
-│ + getCachedDailyVerse() -> BibleResponse?            │
-│ + cacheDailyVerse(_ response: BibleResponse)         │
-│ + isDailyVerseFresh() -> Bool                        │
-│ + fetchAndCacheDailyVerse(                           │
-│     translation: String) async throws                │
-│   -> BibleResponse                                   │
-└──────────────────────────────────────────────────────┘
-```
-
-**Strategy:** Store the daily verse JSON + the date string in UserDefaults. On app launch, check if cached date matches today. If stale, fetch a new random verse and cache it.
-
----
-
-## 4. ViewModel Design
-
-All ViewModels use the `@Observable` macro (iOS 17+) for efficient observation without `ObservableObject` / `@Published` boilerplate.
-
-### 4.1 DailyVerseViewModel
-
-```
-┌──────────────────────────────────────────────────────┐
-│ DailyVerseViewModel                    (@Observable) │
-├──────────────────────────────────────────────────────┤
-│ + verse: BibleResponse?                              │
-│ + isLoading: Bool                                    │
-│ + errorMessage: String?                              │
-├──────────────────────────────────────────────────────┤
-│ + loadDailyVerse() async                             │
-│ + refresh() async                                    │
-└──────────────────────────────────────────────────────┘
-```
-
-### 4.2 RandomVerseViewModel
-
-```
-┌──────────────────────────────────────────────────────┐
-│ RandomVerseViewModel                   (@Observable) │
-├──────────────────────────────────────────────────────┤
-│ + verse: BibleResponse?                              │
-│ + isLoading: Bool                                    │
-│ + errorMessage: String?                              │
-│ + hasAppeared: Bool                                  │
-├──────────────────────────────────────────────────────┤
-│ + fetchRandomVerse() async                           │
-│ + shuffle() async        // triggers animation       │
-└──────────────────────────────────────────────────────┘
-```
-
-### 4.3 SearchViewModel
-
-```
-┌──────────────────────────────────────────────────────┐
-│ SearchViewModel                        (@Observable) │
-├──────────────────────────────────────────────────────┤
-│ + searchText: String                                 │
-│ + result: BibleResponse?                             │
-│ + isLoading: Bool                                    │
-│ + errorMessage: String?                              │
-│ + recentSearches: [String]                           │
-├──────────────────────────────────────────────────────┤
-│ + search() async                                     │
-│ + clearSearch()                                      │
-│ + addToRecent(_ query: String)                       │
-└──────────────────────────────────────────────────────┘
-```
-
-Recent searches stored in UserDefaults (max 10 entries).
-
-### 4.4 FavoritesViewModel
-
-```
-┌──────────────────────────────────────────────────────┐
-│ FavoritesViewModel                     (@Observable) │
-├──────────────────────────────────────────────────────┤
-│ Note: Favorites data is fetched via @Query in the    │
-│ view. This VM handles mutations only.                │
-├──────────────────────────────────────────────────────┤
-│ + addFavorite(from: BibleResponse,                   │
-│               context: ModelContext)                  │
-│ + removeFavorite(_ favorite: FavoriteVerse,           │
-│                  context: ModelContext)               │
-│ + isFavorited(reference: String,                     │
-│               in favorites: [FavoriteVerse]) -> Bool  │
-└──────────────────────────────────────────────────────┘
-```
-
-### 4.5 SettingsViewModel
-
-```
-┌──────────────────────────────────────────────────────┐
-│ SettingsViewModel                      (@Observable) │
-├──────────────────────────────────────────────────────┤
-│ + selectedTranslation: String                        │
-│ + appearanceMode: String                             │
-│ + fontSize: Double                                   │
-│ + showVerseNumbers: Bool                             │
-├──────────────────────────────────────────────────────┤
-│ + availableTranslations: [Translation]  // static    │
-│ + resetToDefaults()                                  │
-└──────────────────────────────────────────────────────┘
-```
-
-Available translations (from bible-api.com): `web` (World English Bible), `kjv` (King James Version), `bbe` (Bible in Basic English), `oeb-us` (Open English Bible, US Edition).
-
----
-
-## 5. View Hierarchy & Navigation
-
-### 5.1 Navigation Flow Diagram
-
-```mermaid
-graph TD
-    A[Bible_AppApp] --> B[MainTabView]
-    B --> C[Tab 1: DailyVerseView]
-    B --> D[Tab 2: RandomVerseView]
-    B --> E[Tab 3: SearchView]
-    B --> F[Tab 4: FavoritesView]
-    B --> G[Tab 5: SettingsView]
-
-    C --> H[VerseCardView]
-    C --> I[Share Sheet]
-    C --> J[Favorite Toggle]
-
-    D --> H
-    D --> I
-    D --> J
-
-    E --> K[SearchResultView]
-    K --> H
-    K --> I
-    K --> J
-
-    F --> L[FavoriteRowView]
-    L --> H
-    L --> I
-
-    H --> M[VerseShareView - rendered for sharing]
-```
-
-### 5.2 Tab Configuration
-
-| Tab | Label     | SF Symbol         | View            |
-| --- | --------- | ----------------- | --------------- |
-| 1   | Today     | `sun.max.fill`    | DailyVerseView  |
-| 2   | Discover  | `shuffle`         | RandomVerseView |
-| 3   | Search    | `magnifyingglass` | SearchView      |
-| 4   | Favorites | `heart.fill`      | FavoritesView   |
-| 5   | Settings  | `gearshape.fill`  | SettingsView    |
-
-### 5.3 View Component Details
-
-#### MainTabView
-
-- Root `TabView` with 5 tabs
-- Uses `.tabViewStyle(.automatic)`
-- Tab badge on Favorites showing count
-
-#### DailyVerseView
-
-- Full-screen card layout with background gradient
-- Large serif text for the verse
-- Reference and translation shown below
-- Heart button (favorite toggle) in top-right
-- Share button in bottom toolbar
-- Pull-to-refresh not applicable (daily = fixed); shows "refreshes tomorrow" note
-- `.task { }` modifier to load verse on appear
-
-#### RandomVerseView
-
-- Same `VerseCardView` as daily verse
-- Large "Shuffle" button with `shuffle` SF Symbol
-- Tap triggers: loading animation → new verse with `.transition(.push(from: .bottom))`
-- Heart button + share button
-- `.task { }` loads first random verse on appear
-
-#### SearchView
-
-- `NavigationStack` with `.searchable(text:)` modifier
-- Shows recent searches as chips when search bar is empty
-- On submit → fetch verse → display VerseCardView
-- Error state shows friendly message for invalid references
-- Book name suggestions (optional enhancement)
-
-#### FavoritesView
-
-- `NavigationStack` with `List` of `FavoriteRowView`
-- `@Query(sort: \FavoriteVerse.savedAt, order: .reverse)` — newest first
-- Swipe to delete
-- Empty state with illustration and prompt
-- Tap row → detail view with full `VerseCardView`
-
-#### SettingsView
-
-- `Form` with grouped sections:
-  - **Translation**: Picker with available translations
-  - **Appearance**: System / Light / Dark picker
-  - **Font Size**: Slider (16...32)
-  - **Display**: Toggle for verse numbers
-  - **About**: App version, API attribution, link to bible-api.com
-
-#### VerseCardView (Shared)
-
-- Reusable component accepting `BibleResponse`
-- Rounded rectangle card with subtle shadow
-- Verse text in large serif font (Georgia or system serif)
-- Reference in smaller sans-serif
-- Translation badge
-- Adapts to `@AppStorage("fontSize")` setting
-- Supports both light and dark mode via semantic colors
-
-#### VerseShareView (Shared)
-
-- Non-interactive rendered version of VerseCardView
-- Fixed size (1080x1080) for Instagram-friendly sharing
-- Branded background gradient + verse text + reference
-- Rendered to `UIImage` via `ImageRenderer` (iOS 16+)
-- Passed to `UIActivityViewController` via the share sheet extension
-
----
-
-## 6. Color Scheme & Design System
-
-### 6.1 Color Palette
-
-| Token            | Light Mode     | Dark Mode      | Usage                       |
-| ---------------- | -------------- | -------------- | --------------------------- |
-| `AccentGold`     | `#C9953C`      | `#E2B861`      | Buttons, highlights, badges |
-| `CardBackground` | `#FFFDF7`      | `#1C1C1E`      | Verse card background       |
-| `PrimaryText`    | `#1A1A1A`      | `#F5F5F5`      | Verse body text             |
-| `SecondaryText`  | `#6B6B6B`      | `#A0A0A0`      | Reference, metadata         |
-| `Background`     | System default | System default | Screen backgrounds          |
-| `DividerColor`   | `#E0DDD5`      | `#3A3A3C`      | Subtle separators           |
-
-### 6.2 Typography
-
-| Style         | Font                         | Size  | Weight   | Usage                 |
-| ------------- | ---------------------------- | ----- | -------- | --------------------- |
-| `verseText`   | `.serif` (system) or Georgia | 20–28 | Regular  | Verse body            |
-| `reference`   | `.body`                      | 16    | Semibold | "John 3:16"           |
-| `translation` | `.caption`                   | 12    | Medium   | "World English Bible" |
-| `heading`     | `.title2`                    | 22    | Bold     | Section headers       |
-| `tabLabel`    | `.caption2`                  | 10    | Medium   | Tab bar labels        |
-
-Font size for `verseText` is adjustable via Settings slider and respects Dynamic Type.
-
-### 6.3 Spacing & Layout
-
-| Token          | Value | Usage                          |
-| -------------- | ----- | ------------------------------ |
-| `cardPadding`  | 24pt  | Inner padding of verse cards   |
-| `cardRadius`   | 20pt  | Corner radius of verse cards   |
-| `screenMargin` | 20pt  | Horizontal margins for screens |
-| `itemSpacing`  | 12pt  | Space between list items       |
-| `sectionGap`   | 32pt  | Space between major sections   |
-
-### 6.4 Shadows & Effects
-
-- Card shadow: `color: .black.opacity(0.08), radius: 12, y: 4`
-- Subtle inner glow on cards via overlay gradient (optional)
-- Shuffle button: spring animation with `response: 0.4, dampingFraction: 0.6`
-
----
-
-## 7. Data Flow Diagram
-
-```mermaid
-graph LR
-    A[bible-api.com] -->|JSON| B[BibleAPIClient]
-    B -->|BibleResponse| C[ViewModels]
-    C -->|@Observable binding| D[Views]
-    D -->|user action| C
-    C -->|save/delete| E[SwiftData - ModelContext]
-    E -->|@Query| D
-    F[UserDefaults] -->|@AppStorage| D
-    D -->|settings changes| F
-    G[DailyVerseService] -->|cached verse| C
-    G -->|fetch if stale| B
-```
-
----
-
-## 8. Error Handling Strategy
-
-| Error Scenario      | User Experience                                            |
-| ------------------- | ---------------------------------------------------------- |
-| No network          | `ErrorView` with "No internet connection" + retry button   |
-| Invalid reference   | Inline message: "Verse not found. Try e.g. John 3:16"      |
-| API rate limit/down | `ErrorView` with "Service temporarily unavailable" + retry |
-| Decoding failure    | `ErrorView` with generic error + retry                     |
-| Empty favorites     | Illustrated empty state: "No favorites yet"                |
-
-All network errors are caught in ViewModels and surfaced as user-friendly `errorMessage` strings.
-
----
-
-## 9. Implementation Plan
-
-The following checklist is the recommended implementation order:
-
-- [ ] **Step 1 — Project cleanup**: Remove default `Item.swift` and boilerplate from `ContentView.swift`; create folder structure under `Bible App/`
-- [ ] **Step 2 — Data models**: Implement `BibleResponse.swift`, `Verse.swift`, `FavoriteVerse.swift`
-- [ ] **Step 3 — Theme system**: Create `AppTheme.swift` with colors, fonts, and spacing constants; add color sets to Asset catalog
-- [ ] **Step 4 — API client**: Implement `BibleAPIClient.swift` with `fetchVerse` and `fetchRandomVerse`; implement `BibleAPIError` enum
-- [ ] **Step 5 — Daily verse service**: Implement `DailyVerseService.swift` with UserDefaults caching logic
-- [ ] **Step 6 — Shared components**: Build `VerseCardView`, `LoadingView`, `ErrorView`
-- [ ] **Step 7 — Daily verse screen**: Implement `DailyVerseViewModel` and `DailyVerseView`
-- [ ] **Step 8 — Random verse screen**: Implement `RandomVerseViewModel` and `RandomVerseView` with shuffle animation
-- [ ] **Step 9 — Search screen**: Implement `SearchViewModel` and `SearchView` with `.searchable` modifier and recent searches
-- [ ] **Step 10 — Favorites**: Implement `FavoritesViewModel`, `FavoritesView`, `FavoriteRowView`; wire up SwiftData queries
-- [ ] **Step 11 — Settings**: Implement `SettingsViewModel` and `SettingsView` with all preference controls
-- [ ] **Step 12 — Tab navigation**: Build `MainTabView` and wire up in `Bible_AppApp.swift`; configure `ModelContainer` with `FavoriteVerse`
-- [ ] **Step 13 — Sharing**: Implement `VerseShareView` with `ImageRenderer` and share sheet extension
-- [ ] **Step 14 — Extensions & utilities**: Implement `String+Trimming`, `View+ShareSheet`
-- [ ] **Step 15 — Preview data**: Create `PreviewData.swift` with mock `BibleResponse` objects
-- [ ] **Step 16 — Polish**: Animations, transitions, haptic feedback, Dynamic Type support, dark mode verification
-- [ ] **Step 17 — App icon & assets**: Design and add app icon, finalize color assets
-
----
-
-## 10. Key Technical Decisions
-
-| Decision         | Choice              | Rationale                                                     |
-| ---------------- | ------------------- | ------------------------------------------------------------- |
-| Architecture     | MVVM                | Clean separation; native SwiftUI pattern                      |
-| Observation      | `@Observable` macro | iOS 17+ — simpler than ObservableObject, better performance   |
-| Persistence      | SwiftData           | Native Apple framework; already scaffolded in project         |
-| Settings Storage | `@AppStorage`       | Perfect for simple key-value preferences                      |
-| Networking       | Native `URLSession` | No third-party dependencies needed for simple REST calls      |
-| Concurrency      | `async/await`       | Modern Swift Concurrency; clean error propagation             |
-| Image Sharing    | `ImageRenderer`     | iOS 16+ API; renders SwiftUI views to images natively         |
-| Minimum Target   | iOS 17              | Enables `@Observable`, latest SwiftData, and SwiftUI features |
-| Third-party deps | None                | Keeps the app lightweight and maintainable                    |
-
----
-
-## 11. API Reference Summary
-
-**Base URL:** `https://bible-api.com`
-
-| Endpoint                          | Method | Description                |
-| --------------------------------- | ------ | -------------------------- |
-| `/{reference}`                    | GET    | Fetch specific verse(s)    |
-| `/{reference}?translation={id}`   | GET    | Fetch with translation     |
-| `/?random=verse`                  | GET    | Random verse               |
-| `/?random=verse&translation={id}` | GET    | Random verse + translation |
-
-**Available Translations:**
-
-| ID       | Name                           | License       |
-| -------- | ------------------------------ | ------------- |
-| `web`    | World English Bible            | Public Domain |
-| `kjv`    | King James Version             | Public Domain |
-| `bbe`    | Bible in Basic English         | Public Domain |
-| `oeb-us` | Open English Bible, US Edition | Public Domain |
-
-**Response Shape:**
-
-```json
-{
-  "reference": "John 3:16",
-  "verses": [
-    {
-      "book_id": "JHN",
-      "book_name": "John",
-      "chapter": 3,
-      "verse": 16,
-      "text": "For God so loved the world..."
-    }
-  ],
-  "text": "For God so loved the world...",
-  "translation_id": "web",
-  "translation_name": "World English Bible",
-  "translation_note": "Public Domain"
-}
-```
+<skills_system priority="1">
+
+## Available Skills
+
+<!-- SKILLS_TABLE_START -->
+<usage>
+When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.
+
+How to use skills:
+- Invoke: `npx openskills read <skill-name>` (run in your shell)
+  - For multiple: `npx openskills read skill-one,skill-two`
+- The skill content will load with detailed instructions on how to complete the task
+- Base directory provided in output for resolving bundled resources (references/, scripts/, assets/)
+
+Usage notes:
+- Only use skills listed in <available_skills> below
+- Do not invoke a skill that is already loaded in your context
+- Each skill invocation is stateless
+</usage>
+
+<available_skills>
+
+<skill>
+<name>axiom-accessibility-diag</name>
+<description>Use when fixing VoiceOver issues, Dynamic Type violations, color contrast failures, touch target problems, keyboard navigation gaps, or Reduce Motion support - comprehensive accessibility diagnostics with WCAG compliance, Accessibility Inspector workflows, and App Store Review preparation for iOS/macOS</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-app-composition</name>
+<description>Use when structuring app entry points, managing authentication flows, switching root views, handling scene lifecycle, or asking 'how do I structure my @main', 'where does auth state live', 'how do I prevent screen flicker on launch', 'when should I modularize' - app-level composition patterns for iOS 26+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-app-discoverability</name>
+<description>Use when making app surface in Spotlight search, Siri suggestions, or system experiences - covers the 6-step strategy combining App Intents, App Shortcuts, Core Spotlight, and NSUserActivity to feed the system metadata for iOS 16+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-app-intents-ref</name>
+<description>Use when integrating App Intents for Siri, Apple Intelligence, Shortcuts, Spotlight, or system experiences - covers AppIntent, AppEntity, parameter handling, entity queries, background execution, authentication, and debugging common integration issues for iOS 16+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-app-shortcuts-ref</name>
+<description>Use when implementing App Shortcuts for instant Siri/Spotlight availability, configuring AppShortcutsProvider, adding suggested phrases, or debugging shortcuts not appearing - covers complete App Shortcuts API for iOS 16+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-app-store-connect-ref</name>
+<description>Reference for App Store Connect crash analysis, TestFlight feedback, metrics dashboards, and data export workflows</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-apple-docs</name>
+<description>Use when ANY question involves Apple framework APIs, Swift compiler errors, or Xcode-bundled documentation. Covers Liquid Glass, Swift 6.2 concurrency, Foundation Models, SwiftData, StoreKit, 32 Swift compiler diagnostics.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-apple-docs-research</name>
+<description>Use when researching Apple frameworks, APIs, or WWDC sessions - provides techniques for retrieving full transcripts, code samples, and documentation using Chrome browser and sosumi.ai</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-assume-isolated</name>
+<description>Use when needing synchronous actor access in tests, legacy delegate callbacks, or performance-critical code. Covers MainActor.assumeIsolated, @preconcurrency protocol conformances, crash behavior, Task vs assumeIsolated.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-auto-layout-debugging</name>
+<description>Use when encountering "Unable to simultaneously satisfy constraints" errors, constraint conflicts, ambiguous layout warnings, or views positioned incorrectly - systematic debugging workflow for Auto Layout issues in iOS</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-avfoundation-ref</name>
+<description>Reference — AVFoundation audio APIs, AVAudioSession categories/modes, AVAudioEngine pipelines, bit-perfect DAC output, iOS 26+ spatial audio capture, ASAF/APAC, Audio Mix with Cinematic framework</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-axe-ref</name>
+<description>Use when automating iOS Simulator UI interactions beyond simctl capabilities. Reference for AXe CLI covering accessibility-based tapping, gestures, text input, screenshots, video recording, and UI tree inspection.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-background-processing</name>
+<description>Use when implementing BGTaskScheduler, debugging background tasks that never run, understanding why tasks terminate early, or testing background execution - systematic task lifecycle management with proper registration, expiration handling, and Swift 6 cancellation patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-background-processing-diag</name>
+<description>Symptom-based background task troubleshooting - decision trees for 'task never runs', 'task terminates early', 'works in dev not prod', 'handler not called', with time-cost analysis for each diagnosis path</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-background-processing-ref</name>
+<description>Complete background task API reference - BGTaskScheduler, BGAppRefreshTask, BGProcessingTask, BGContinuedProcessingTask (iOS 26), beginBackgroundTask, background URLSession, with all WWDC code examples</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-build-debugging</name>
+<description>Use when encountering dependency conflicts, CocoaPods/SPM resolution failures, "Multiple commands produce" errors, or framework version mismatches - systematic dependency and build configuration debugging for iOS projects. Includes pressure scenario guidance for resisting quick fixes under time constraints</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-build-performance</name>
+<description>Use when build times are slow, investigating build performance, analyzing Build Timeline, identifying type checking bottlenecks, enabling compilation caching, or optimizing incremental builds - comprehensive build optimization workflows including Xcode 26 compilation caching</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-camera-capture</name>
+<description>AVCaptureSession, camera preview, photo capture, video recording, RotationCoordinator, session interruptions, deferred processing, capture responsiveness, zero-shutter-lag, photoQualityPrioritization, front camera mirroring</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-camera-capture-diag</name>
+<description>camera freezes, preview rotated wrong, capture slow, session interrupted, black preview, front camera mirrored, camera not starting, AVCaptureSession errors, startRunning blocks, phone call interrupts camera</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-camera-capture-ref</name>
+<description>Reference — AVCaptureSession, AVCapturePhotoSettings, AVCapturePhotoOutput, RotationCoordinator, photoQualityPrioritization, deferred processing, AVCaptureMovieFileOutput, session presets, capture device APIs</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-cloud-sync</name>
+<description>Use when choosing between CloudKit vs iCloud Drive, implementing reliable sync, handling offline-first patterns, or designing sync architecture - prevents common sync mistakes that cause data loss</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-cloud-sync-diag</name>
+<description>Use when debugging 'file not syncing', 'CloudKit error', 'sync conflict', 'iCloud upload failed', 'ubiquitous item error', 'data not appearing on other devices', 'CKError', 'quota exceeded' - systematic iCloud sync diagnostics for both CloudKit and iCloud Drive</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-cloudkit-ref</name>
+<description>Use when implementing 'CloudKit sync', 'CKSyncEngine', 'CKRecord', 'CKDatabase', 'SwiftData CloudKit', 'shared database', 'public database', 'CloudKit zones', 'conflict resolution' - comprehensive CloudKit database APIs and modern sync patterns reference</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-codable</name>
+<description>Use when working with Codable protocol, JSON encoding/decoding, CodingKeys customization, enum serialization, date strategies, custom containers, or encountering "Type does not conform to Decodable/Encodable" errors - comprehensive Codable patterns and anti-patterns for Swift 6.x</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-concurrency-profiling</name>
+<description>Use when profiling async/await performance, diagnosing actor contention, or investigating thread pool exhaustion. Covers Swift Concurrency Instruments template, task visualization, actor contention analysis, thread pool debugging.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-core-data</name>
+<description>Use when choosing Core Data vs SwiftData, setting up the Core Data stack, modeling relationships, or implementing concurrency patterns - prevents thread-confinement errors and migration crashes</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-core-data-diag</name>
+<description>Use when debugging schema migration crashes, concurrency thread-confinement errors, N+1 query performance, SwiftData to Core Data bridging, or testing migrations without data loss - systematic Core Data diagnostics with safety-first migration patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-core-location</name>
+<description>Use for Core Location implementation patterns - authorization strategy, monitoring strategy, accuracy selection, background location</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-core-location-diag</name>
+<description>Use for Core Location troubleshooting - no location updates, background location broken, authorization denied, geofence not triggering</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-core-location-ref</name>
+<description>Use for Core Location API reference - CLLocationUpdate, CLMonitor, CLServiceSession, authorization, background location, geofencing</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-core-spotlight-ref</name>
+<description>Use when indexing app content for Spotlight search, using NSUserActivity for prediction/handoff, or choosing between CSSearchableItem and IndexedEntity - covers Core Spotlight framework and NSUserActivity integration for iOS 9+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-database-migration</name>
+<description>Use when adding/modifying database columns, encountering "FOREIGN KEY constraint failed", "no such column", "cannot add NOT NULL column" errors, or creating schema migrations for SQLite/GRDB/SQLiteData - prevents data loss with safe migration patterns and testing workflows for iOS/macOS apps</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-deep-link-debugging</name>
+<description>Use when adding debug-only deep links for testing, enabling simulator navigation to specific screens, or integrating with automated testing workflows - enables closed-loop debugging without production deep link implementation</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-display-performance</name>
+<description>Use when app runs at unexpected frame rate, stuck at 60fps on ProMotion, frame pacing issues, or configuring render loops. Covers MTKView, CADisplayLink, CAMetalDisplayLink, frame pacing, hitches, system caps.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-energy</name>
+<description>Use when app drains battery, device gets hot, users report energy issues, or auditing power consumption - systematic Power Profiler diagnosis, subsystem identification (CPU/GPU/Network/Location/Display), anti-pattern fixes for iOS/iPadOS</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-energy-diag</name>
+<description>Symptom-based energy troubleshooting - decision trees for 'app at top of battery settings', 'phone gets hot', 'background drain', 'high cellular usage', with time-cost analysis for each diagnosis path</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-energy-ref</name>
+<description>Complete energy optimization API reference - Power Profiler workflows, timer/network/location/background APIs, iOS 26 BGContinuedProcessingTask, MetricKit monitoring, with all WWDC code examples</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-extensions-widgets</name>
+<description>Use when implementing widgets, Live Activities, or Control Center controls - enforces correct patterns for timeline management, data sharing, and extension lifecycle to prevent common crashes and memory issues</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-extensions-widgets-ref</name>
+<description>Use when implementing widgets, Live Activities, Control Center controls, or app extensions - comprehensive API reference for WidgetKit, ActivityKit, App Groups, and extension lifecycle for iOS 14+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-file-protection-ref</name>
+<description>Use when asking about 'FileProtectionType', 'file encryption iOS', 'NSFileProtection', 'data protection', 'secure file storage', 'encrypt files at rest', 'complete protection', 'file security' - comprehensive reference for iOS file encryption and data protection APIs</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-foundation-models</name>
+<description>Use when implementing on-device AI with Apple's Foundation Models framework — prevents context overflow, blocking UI, wrong model use cases, and manual JSON parsing when @Generable should be used. iOS 26+, macOS 26+, iPadOS 26+, axiom-visionOS 26+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-foundation-models-diag</name>
+<description>Use when debugging Foundation Models issues — context exceeded, guardrail violations, slow generation, availability problems, unsupported language, or unexpected output. Systematic diagnostics with production crisis defense.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-foundation-models-ref</name>
+<description>Reference — Complete Foundation Models framework guide covering LanguageModelSession, @Generable, @Guide, Tool protocol, streaming, dynamic schemas, built-in use cases, and all WWDC 2025 code examples</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-getting-started</name>
+<description>Use when first installing Axiom, unsure which skill to use, want an overview of available skills, or need help finding the right skill for your situation — interactive onboarding that recommends skills based on your project and current focus</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-grdb</name>
+<description>Use when writing raw SQL queries with GRDB, complex joins, ValueObservation for reactive queries, DatabaseMigrator patterns, query profiling under performance pressure, or dropping down from SQLiteData for performance - direct SQLite access for iOS/macOS</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-hang-diagnostics</name>
+<description>Use when app freezes, UI unresponsive, main thread blocked, watchdog termination, or diagnosing hang reports from Xcode Organizer or MetricKit</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-haptics</name>
+<description>Use when implementing haptic feedback, Core Haptics patterns, audio-haptic synchronization, or debugging haptic issues - covers UIFeedbackGenerator, CHHapticEngine, AHAP patterns, and Apple's Causality-Harmony-Utility design principles from WWDC 2021</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-hig</name>
+<description>Use when making design decisions, reviewing UI for HIG compliance, choosing colors/backgrounds/typography, or defending design choices - quick decision frameworks and checklists for Apple Human Interface Guidelines</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-hig-ref</name>
+<description>Reference — Comprehensive Apple Human Interface Guidelines covering colors (semantic, custom, patterns), backgrounds (material hierarchy, dynamic), typography (built-in styles, custom fonts, Dynamic Type), SF Symbols (rendering modes, color, axiom-localization), Dark Mode, accessibility, and platform-specific considerations</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-icloud-drive-ref</name>
+<description>Use when implementing 'iCloud Drive', 'ubiquitous container', 'file sync', 'NSFileCoordinator', 'NSFilePresenter', 'isUbiquitousItem', 'NSUbiquitousKeyValueStore', 'ubiquitous file sync' - comprehensive file-based iCloud sync reference</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-in-app-purchases</name>
+<description>Use when implementing in-app purchases, StoreKit 2, subscriptions, or transaction handling - testing-first workflow with .storekit configuration, StoreManager architecture, transaction verification, subscription management, and restore purchases for consumables, non-consumables, and auto-renewable subscriptions</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-accessibility</name>
+<description>Use when fixing or auditing ANY accessibility issue - VoiceOver, Dynamic Type, color contrast, touch targets, WCAG compliance, App Store accessibility review.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-ai</name>
+<description>Use when implementing ANY Apple Intelligence or on-device AI feature. Covers Foundation Models, @Generable, LanguageModelSession, structured output, Tool protocol, iOS 26 AI integration.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-build</name>
+<description>Use when ANY iOS build fails, test crashes, Xcode misbehaves, or environment issue occurs before debugging code. Covers build failures, compilation errors, dependency conflicts, simulator problems, environment-first diagnostics.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-concurrency</name>
+<description>Use when writing ANY code with async, actors, threads, or seeing ANY concurrency error. Covers Swift 6 concurrency, @MainActor, Sendable, data races, async/await patterns, performance optimization.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-data</name>
+<description>Use when working with ANY data persistence, database, axiom-storage, CloudKit, migration, or serialization. Covers SwiftData, Core Data, GRDB, SQLite, CloudKit sync, file storage, Codable, migrations.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-games</name>
+<description>Use when building ANY 2D or 3D game, game prototype, or interactive simulation with SpriteKit, SceneKit, or RealityKit. Covers scene graphs, ECS architecture, physics, actions, game loops, rendering, SwiftUI integration, SceneKit migration.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-graphics</name>
+<description>Use when working with ANY GPU rendering, Metal, OpenGL migration, shaders, 3D content, RealityKit, AR, or display performance. Covers Metal migration, shader conversion, RealityKit ECS, RealityView, variable refresh rate, ProMotion.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-integration</name>
+<description>Use when integrating ANY iOS system feature - Siri, Shortcuts, Apple Intelligence, widgets, IAP, camera, photo library, photos picker, audio, axiom-haptics, axiom-localization, privacy. Covers App Intents, WidgetKit, StoreKit, AVFoundation, PHPicker, PhotosPicker, Core Haptics, App Shortcuts, Spotlight.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-ml</name>
+<description>Use when deploying ANY machine learning model on-device, converting models to CoreML, compressing models, or implementing speech-to-text. Covers CoreML conversion, MLTensor, model compression (quantization/palettization/pruning), stateful models, KV-cache, multi-function models, async prediction, SpeechAnalyzer, SpeechTranscriber.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-networking</name>
+<description>Use when implementing or debugging ANY network connection, API call, or socket. Covers URLSession, Network.framework, NetworkConnection, deprecated APIs, connection diagnostics, structured concurrency networking.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-performance</name>
+<description>Use when app feels slow, memory grows, battery drains, or diagnosing ANY performance issue. Covers memory leaks, profiling, Instruments workflows, retain cycles, performance optimization.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-testing</name>
+<description>Use when writing ANY test, debugging flaky tests, making tests faster, or asking about Swift Testing vs XCTest. Covers unit tests, UI tests, fast tests without simulator, async testing, test architecture.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-ui</name>
+<description>Use when building, fixing, or improving ANY iOS UI including SwiftUI, UIKit, layout, navigation, animations, design guidelines. Covers view updates, layout bugs, navigation issues, performance, architecture, Apple design compliance.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ios-vision</name>
+<description>Use when implementing ANY computer vision feature - image analysis, object detection, pose detection, person segmentation, subject lifting, hand/body pose tracking.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-liquid-glass</name>
+<description>Use when implementing Liquid Glass effects, reviewing UI for Liquid Glass adoption, debugging visual artifacts, optimizing performance, or requesting expert review of Liquid Glass implementation - provides comprehensive design principles, API patterns, and troubleshooting guidance from WWDC 2025. Includes design review pressure handling and professional push-back frameworks</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-liquid-glass-ref</name>
+<description>Use when planning comprehensive Liquid Glass adoption across an app, auditing existing interfaces for Liquid Glass compatibility, implementing app icon updates, or understanding platform-specific Liquid Glass behavior - comprehensive reference guide covering all aspects of Liquid Glass adoption from WWDC 2025</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-localization</name>
+<description>Use when localizing apps, using String Catalogs, generating type-safe symbols (Xcode 26+), handling plurals, RTL layouts, locale-aware formatting, or migrating from .strings files - comprehensive i18n patterns for Xcode 15-26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-memory-debugging</name>
+<description>Use when you see memory warnings, 'retain cycle', app crashes from memory pressure, or when asking 'why is my app using so much memory', 'how do I find memory leaks', 'my deinit is never called', 'Instruments shows memory growth', 'app crashes after 10 minutes' - systematic memory leak detection and fixes for iOS/macOS</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-metal-migration</name>
+<description>Use when porting OpenGL/DirectX to Metal - translation layer vs native rewrite decisions, migration planning, anti-patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-metal-migration-diag</name>
+<description>Use when ANY Metal porting issue occurs - black screen, rendering artifacts, shader errors, wrong colors, performance regressions, GPU crashes</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-metal-migration-ref</name>
+<description>Use when converting shaders or looking up API equivalents - GLSL to MSL, HLSL to MSL, GL/DirectX to Metal mappings, MTKView setup code</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-metrickit-ref</name>
+<description>MetricKit API reference for field diagnostics - MXMetricPayload, MXDiagnosticPayload, MXCallStackTree parsing, crash and hang collection</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-network-framework-ref</name>
+<description>Reference — Comprehensive Network.framework guide covering NetworkConnection (iOS 26+), NWConnection (iOS 12-25), TLV framing, Coder protocol, NetworkListener, NetworkBrowser, Wi-Fi Aware discovery, and migration strategies</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-networking</name>
+<description>Use when implementing Network.framework connections, debugging connection failures, migrating from sockets/URLSession streams, or adopting structured concurrency networking patterns - prevents deprecated API usage, reachability anti-patterns, and thread-safety violations with iOS 12-26+ APIs</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-networking-diag</name>
+<description>Use when debugging connection timeouts, TLS handshake failures, data not arriving, connection drops, performance issues, or proxy/VPN interference - systematic Network.framework diagnostics with production crisis defense</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-networking-legacy</name>
+<description>This skill should be used when working with NWConnection patterns for iOS 12-25, supporting apps that can't use async/await yet, or maintaining backward compatibility with completion handler networking.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-networking-migration</name>
+<description>Network framework migration guides. Use when migrating from BSD sockets to NWConnection, NWConnection to NetworkConnection (iOS 26+), or URLSession StreamTask to NetworkConnection.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-now-playing</name>
+<description>Use when Now Playing metadata doesn't appear on Lock Screen/Control Center, remote commands (play/pause/skip) don't respond, artwork is missing/wrong/flickering, or playback state is out of sync - provides systematic diagnosis, correct patterns, and professional push-back for audio/video apps on iOS 18+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-now-playing-carplay</name>
+<description>CarPlay Now Playing integration patterns. Use when implementing CarPlay audio controls, CPNowPlayingTemplate customization, or debugging CarPlay-specific issues.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-now-playing-musickit</name>
+<description>MusicKit Now Playing integration patterns. Use when playing Apple Music content with ApplicationMusicPlayer and understanding automatic vs manual Now Playing info updates.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-objc-block-retain-cycles</name>
+<description>Use when debugging memory leaks from blocks, blocks assigned to self or properties, network callbacks, or crashes from deallocated objects - systematic weak-strong pattern diagnosis with mandatory diagnostic rules</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ownership-conventions</name>
+<description>Use when optimizing large value type performance, working with noncopyable types, or reducing ARC traffic. Covers borrowing, consuming, inout modifiers, consume operator, ~Copyable types.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-performance-profiling</name>
+<description>Use when app feels slow, memory grows over time, battery drains fast, or you want to profile proactively - decision trees to choose the right Instruments tool, deep workflows for Time Profiler/Allocations/Core Data, and pressure scenarios for misinterpreting results</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-photo-library</name>
+<description>PHPicker, PhotosPicker, photo selection, limited library access, presentLimitedLibraryPicker, save to camera roll, PHPhotoLibrary, PHAssetCreationRequest, Transferable, PhotosPickerItem, photo permissions</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-photo-library-ref</name>
+<description>Reference — PHPickerViewController, PHPickerConfiguration, PhotosPicker, PhotosPickerItem, Transferable, PHPhotoLibrary, PHAsset, PHAssetCreationRequest, PHFetchResult, PHAuthorizationStatus, limited library APIs</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-privacy-ux</name>
+<description>Use when implementing privacy manifests, requesting permissions, App Tracking Transparency UX, or preparing Privacy Nutrition Labels - covers just-in-time permission requests, tracking domain management, and Required Reason APIs from WWDC 2023</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-realitykit</name>
+<description>Use when building 3D content, AR experiences, or spatial computing with RealityKit. Covers ECS architecture, SwiftUI integration, RealityView, AR anchors, materials, physics, interaction, multiplayer, performance.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-realitykit-diag</name>
+<description>Use when RealityKit entities not visible, anchors not tracking, gestures not responding, performance drops, materials wrong, or multiplayer sync fails</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-realitykit-ref</name>
+<description>RealityKit API reference — Entity, Component, System, RealityView, Model3D, anchor types, material system, physics, collision, animation, audio, accessibility</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-realm-migration-ref</name>
+<description>Use when migrating from Realm to SwiftData - comprehensive migration guide covering pattern equivalents, threading model conversion, schema migration strategies, CloudKit sync transition, and real-world scenarios</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-scenekit</name>
+<description>Use when working with SceneKit 3D scenes, migrating SceneKit to RealityKit, or maintaining legacy SceneKit code. Covers scene graph, materials, physics, animation, SwiftUI bridge, migration decision tree.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-scenekit-ref</name>
+<description>SceneKit → RealityKit concept mapping, complete API cross-reference for migration, scene graph API, materials, lighting, camera, physics, animation, constraints</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-sf-symbols</name>
+<description>Use when implementing SF Symbols rendering modes, symbol effects, animations, custom symbols, or troubleshooting symbol appearance - covers the full symbol effects system from iOS 17 through SF Symbols 7 Draw animations in iOS 26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-sf-symbols-ref</name>
+<description>Use when you need complete SF Symbols API reference including every rendering mode, symbol effect, configuration option, UIKit equivalent, and platform availability - comprehensive code examples for iOS 17 through iOS 26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-spritekit</name>
+<description>Use when building SpriteKit games, implementing physics, actions, scene management, or debugging game performance. Covers scene graph, physics engine, actions system, game loop, rendering optimization.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-spritekit-diag</name>
+<description>Use when physics contacts don't fire, objects tunnel through walls, frame rate drops, touches don't register, memory spikes, coordinate confusion, or scene transition crashes</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-spritekit-ref</name>
+<description>SpriteKit API reference — all node types, physics body creation, action catalog, texture atlases, constraints, scene setup, particles, SKRenderer</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-sqlitedata</name>
+<description>SQLiteData queries, @Table models, Point-Free SQLite, RETURNING clause, FTS5 full-text search, CloudKit sync, CTEs, JSON aggregation, @DatabaseFunction</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-sqlitedata-migration</name>
+<description>Use when migrating from SwiftData to SQLiteData — decision guide, pattern equivalents, code examples, CloudKit sharing (SwiftData can't), performance benchmarks, gradual migration strategy</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-sqlitedata-ref</name>
+<description>SQLiteData advanced patterns, @Selection column groups, single-table inheritance, recursive CTEs, database views, custom aggregates, TableAlias self-joins, JSON/string aggregation</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-storage</name>
+<description>Use when asking 'where should I store this data', 'should I use SwiftData or files', 'CloudKit vs iCloud Drive', 'Documents vs Caches', 'local or cloud storage', 'how do I sync data', 'where do app files go' - comprehensive decision framework for all iOS storage options</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-storage-diag</name>
+<description>Use when debugging 'files disappeared', 'data missing after restart', 'backup too large', 'can't save file', 'file not found', 'storage full error', 'file inaccessible when locked' - systematic local file storage diagnostics</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-storage-management-ref</name>
+<description>Use when asking about 'purge files', 'storage pressure', 'disk space iOS', 'isExcludedFromBackup', 'URL resource values', 'volumeAvailableCapacity', 'low storage', 'file purging priority', 'cache management' - comprehensive reference for iOS storage management and URL resource value APIs</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-storekit-ref</name>
+<description>Reference — Complete StoreKit 2 API guide covering Product, Transaction, AppTransaction, RenewalInfo, SubscriptionStatus, StoreKit Views, purchase options, server APIs, and all iOS 18.4 enhancements with WWDC 2025 code examples</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swift-concurrency</name>
+<description>Use when you see 'actor-isolated', 'Sendable', 'data race', '@MainActor' errors, or when asking 'why is this not thread safe', 'how do I use async/await', 'what is @MainActor for', 'my app is crashing with concurrency errors', 'how do I fix data races' - Swift 6 strict concurrency patterns with actor isolation and async/await</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swift-performance</name>
+<description>Use when optimizing Swift code performance, reducing memory usage, improving runtime efficiency, dealing with COW, ARC overhead, generics specialization, or collection optimization</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swift-testing</name>
+<description>Use when writing unit tests, adopting Swift Testing framework, making tests run faster without simulator, architecting code for testability, testing async code reliably, or migrating from XCTest - covers @Test/@Suite macros, #expect/#require, parameterized tests, traits, tags, parallel execution, host-less testing</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftdata</name>
+<description>Use when working with SwiftData - @Model definitions, @Query in SwiftUI, @Relationship macros, ModelContext patterns, CloudKit integration, iOS 26+ features, and Swift 6 concurrency with @MainActor — Apple's native persistence framework</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftdata-migration</name>
+<description>Use when creating SwiftData custom schema migrations with VersionedSchema and SchemaMigrationPlan - property type changes, relationship preservation (one-to-many, many-to-many), the willMigrate/didMigrate limitation, two-stage migration patterns, and testing migrations on real devices</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftdata-migration-diag</name>
+<description>Use when SwiftData migrations crash, fail to preserve relationships, lose data, or work in simulator but fail on device - systematic diagnostics for schema version mismatches, relationship errors, and migration testing gaps</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-26-ref</name>
+<description>Use when implementing iOS 26 SwiftUI features - covers Liquid Glass design system, performance improvements, @Animatable macro, 3D spatial layout, scene bridging, WebView/WebPage, AttributedString rich text editing, drag and drop enhancements, and visionOS integration for iOS 26+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-animation-ref</name>
+<description>Use when implementing SwiftUI animations, understanding VectorArithmetic, using @Animatable macro, zoom transitions, UIKit/AppKit animation bridging, choosing between spring and timing curve animations, or debugging animation behavior - comprehensive animation reference from iOS 13 through iOS 26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-architecture</name>
+<description>Use when separating logic from SwiftUI views, choosing architecture patterns, refactoring view files, or asking 'where should this code go', 'how do I organize my SwiftUI app', 'MVVM vs TCA vs vanilla SwiftUI', 'how do I make SwiftUI testable' - comprehensive architecture patterns with refactoring workflows for iOS 26+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-containers-ref</name>
+<description>Reference — SwiftUI stacks, grids, outlines, and scroll enhancements through iOS 26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-debugging</name>
+<description>Use when debugging SwiftUI view updates, preview crashes, or layout issues - diagnostic decision trees to identify root causes quickly and avoid misdiagnosis under pressure</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-debugging-diag</name>
+<description>Use when SwiftUI view debugging requires systematic investigation - view updates not working after basic troubleshooting, intermittent UI issues, complex state dependencies, or when Self._printChanges() shows unexpected update patterns - systematic diagnostic workflows with Instruments integration</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-gestures</name>
+<description>Use when implementing SwiftUI gestures (tap, drag, long press, magnification, rotation), composing gestures, managing gesture state, or debugging gesture conflicts - comprehensive patterns for gesture recognition, composition, accessibility, and cross-platform support</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-layout</name>
+<description>Use when layouts need to adapt to different screen sizes, iPad multitasking, or iOS 26 free-form windows — decision trees for ViewThatFits vs AnyLayout vs onGeometryChange, size class limitations, and anti-patterns preventing device-based layout mistakes</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-layout-ref</name>
+<description>Reference — Complete SwiftUI adaptive layout API guide covering ViewThatFits, AnyLayout, Layout protocol, onGeometryChange, GeometryReader, size classes, and iOS 26 window APIs</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-nav</name>
+<description>Use when implementing navigation patterns, choosing between NavigationStack and NavigationSplitView, handling deep links, adopting coordinator patterns, or requesting code review of navigation implementation - prevents navigation state corruption, deep link failures, and state restoration bugs for iOS 18+</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-nav-diag</name>
+<description>Use when debugging navigation not responding, unexpected pops, deep links showing wrong screen, state lost on tab switch or background, crashes in navigationDestination, or any SwiftUI navigation failure - systematic diagnostics with production crisis defense</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-nav-ref</name>
+<description>Reference — Comprehensive SwiftUI navigation guide covering NavigationStack (iOS 16+), NavigationSplitView (iOS 16+), NavigationPath, deep linking, state restoration, Tab+Navigation integration (iOS 18+), Liquid Glass navigation (iOS 26+), and coordinator patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-performance</name>
+<description>Use when UI is slow, scrolling lags, animations stutter, or when asking 'why is my SwiftUI view slow', 'how do I optimize List performance', 'my app drops frames', 'view body is called too often', 'List is laggy' - SwiftUI performance optimization with Instruments 26 and WWDC 2025 patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-swiftui-search-ref</name>
+<description>Use when implementing SwiftUI search — .searchable, isSearching, search suggestions, scopes, tokens, programmatic search control (iOS 15-18). For iOS 26 search refinements (bottom-aligned, minimized toolbar, search tab role), see swiftui-26-ref.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-synchronization</name>
+<description>Use when needing thread-safe primitives for performance-critical code. Covers Mutex (iOS 18+), OSAllocatedUnfairLock (iOS 16+), Atomic types, when to use locks vs actors, deadlock prevention with Swift Concurrency.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-testflight-triage</name>
+<description>Use when ANY beta tester reports a crash, ANY crash appears in Organizer or App Store Connect, crash logs need symbolication, app was killed without crash report, or you need to triage TestFlight feedback</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-testing-async</name>
+<description>Use when testing async code with Swift Testing. Covers confirmation for callbacks, @MainActor tests, async/await patterns, timeout control, XCTest migration, parallel test execution.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-textkit-ref</name>
+<description>TextKit 2 complete reference (architecture, migration, Writing Tools, SwiftUI TextEditor) through iOS 26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-typography-ref</name>
+<description>Apple platform typography reference (San Francisco fonts, text styles, Dynamic Type, tracking, leading, internationalization) through iOS 26</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ui-recording</name>
+<description>Use when setting up UI test recording in Xcode 26, enhancing recorded tests for stability, or configuring test plans for multi-configuration replay. Based on WWDC 2025-344 "Record, replay, and review".</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-ui-testing</name>
+<description>Use when writing UI tests, recording interactions, tests have race conditions, timing dependencies, inconsistent pass/fail behavior, or XCTest UI tests are flaky - covers Recording UI Automation (WWDC 2025), condition-based waiting, network conditioning, multi-factor testing, crash debugging, and accessibility-first testing patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-uikit-animation-debugging</name>
+<description>Use when CAAnimation completion handler doesn't fire, spring physics look wrong on device, animation duration mismatches actual time, gesture + animation interaction causes jank, or timing differs between simulator and real hardware - systematic CAAnimation diagnosis with CATransaction patterns, frame rate awareness, and device-specific behavior</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-using-axiom</name>
+<description>Use when starting any iOS/Swift conversation - establishes how to find and use Axiom skills, requiring Skill tool invocation before ANY response including clarifying questions</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-vision</name>
+<description>subject segmentation, VNGenerateForegroundInstanceMaskRequest, isolate object from hand, VisionKit subject lifting, image foreground detection, instance masks, class-agnostic segmentation, VNRecognizeTextRequest, OCR, VNDetectBarcodesRequest, DataScannerViewController, document scanning, RecognizeDocumentsRequest</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-vision-diag</name>
+<description>subject not detected, hand pose missing landmarks, low confidence observations, Vision performance, coordinate conversion, VisionKit errors, observation nil, text not recognized, barcode not detected, DataScannerViewController not working, document scan issues</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-vision-ref</name>
+<description>Vision framework API, VNDetectHumanHandPoseRequest, VNDetectHumanBodyPoseRequest, person segmentation, face detection, VNImageRequestHandler, recognized points, joint landmarks, VNRecognizeTextRequest, VNDetectBarcodesRequest, DataScannerViewController, VNDocumentCameraViewController, RecognizeDocumentsRequest</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-xcode-debugging</name>
+<description>Use when encountering BUILD FAILED, test crashes, simulator hangs, stale builds, zombie xcodebuild processes, "Unable to boot simulator", "No such module" after SPM changes, or mysterious test failures despite no code changes - systematic environment-first diagnostics for iOS/macOS projects</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-xctest-automation</name>
+<description>Use when writing, running, or debugging XCUITests. Covers element queries, waiting strategies, accessibility identifiers, test plans, and CI/CD test execution patterns.</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>axiom-xctrace-ref</name>
+<description>Use when automating Instruments profiling, running headless performance analysis, or integrating profiling into CI/CD - comprehensive xctrace CLI reference with record/export patterns</description>
+<location>project</location>
+</skill>
+
+</available_skills>
+<!-- SKILLS_TABLE_END -->
+
+</skills_system>
