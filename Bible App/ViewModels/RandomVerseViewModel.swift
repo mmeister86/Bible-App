@@ -6,7 +6,7 @@
 import Foundation
 
 /// Drives the random verse / discover screen with shuffle animation support.
-@Observable
+@MainActor @Observable
 final class RandomVerseViewModel {
     var verse: BibleResponse?
     var isLoading = false

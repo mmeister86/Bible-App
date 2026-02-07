@@ -90,6 +90,7 @@ struct FavoritesView: View {
                     .font(.system(size: 44))
                     .foregroundStyle(Color.accentGold.opacity(0.6))
             }
+            .accessibilityHidden(true)
 
             Text("No favorites yet")
                 .font(AppTheme.heading)
@@ -199,6 +200,9 @@ private struct FavoriteDetailView: View {
                             .font(.title2)
                             .foregroundStyle(.red)
                     }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Remove from favorites")
 
                     Button {
                         shareTriggered.toggle()
@@ -208,6 +212,9 @@ private struct FavoriteDetailView: View {
                             .font(.title2)
                             .foregroundStyle(Color.secondaryText)
                     }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Share verse")
                 }
                 .padding(.bottom, AppTheme.sectionGap)
             }

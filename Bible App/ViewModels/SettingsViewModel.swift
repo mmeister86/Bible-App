@@ -7,7 +7,7 @@ import Foundation
 
 /// Drives the settings screen. All properties are synced with UserDefaults
 /// so they persist across launches and are readable via @AppStorage elsewhere.
-@Observable
+@MainActor @Observable
 final class SettingsViewModel {
 
     // MARK: - Translation Model
@@ -30,10 +30,6 @@ final class SettingsViewModel {
         didSet { UserDefaults.standard.set(selectedTranslation, forKey: "selectedTranslation") }
     }
 
-    var appearanceMode: String {
-        didSet { UserDefaults.standard.set(appearanceMode, forKey: "appearanceMode") }
-    }
-
     var fontSize: Double {
         didSet { UserDefaults.standard.set(fontSize, forKey: "fontSize") }
     }
@@ -48,7 +44,6 @@ final class SettingsViewModel {
         let defaults = UserDefaults.standard
 
         self.selectedTranslation = defaults.string(forKey: "selectedTranslation") ?? "web"
-        self.appearanceMode = defaults.string(forKey: "appearanceMode") ?? "system"
 
         // fontSize: UserDefaults returns 0.0 for unset keys, so default to 20
         let storedFontSize = defaults.double(forKey: "fontSize")
@@ -67,7 +62,6 @@ final class SettingsViewModel {
     /// Reset all settings to their default values.
     func resetToDefaults() {
         selectedTranslation = "web"
-        appearanceMode = "system"
         fontSize = 20.0
         showVerseNumbers = true
     }

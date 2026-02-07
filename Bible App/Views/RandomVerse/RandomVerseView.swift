@@ -118,6 +118,9 @@ struct RandomVerseView: View {
                         .symbolEffect(.bounce, value: isFavorited)
                         .contentTransition(.symbolEffect(.replace))
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+                .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
 
                 // Share button
                 Button {
@@ -128,6 +131,9 @@ struct RandomVerseView: View {
                         .font(.title2)
                         .foregroundStyle(Color.secondaryText)
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Share verse")
             }
             .padding(.bottom, AppTheme.screenMargin)
 
@@ -159,6 +165,7 @@ struct RandomVerseView: View {
                         y: 4
                     )
             }
+            .accessibilityLabel("Load new verse")
             .buttonStyle(.plain)
             .disabled(viewModel.isLoading)
             .opacity(viewModel.isLoading ? 0.6 : 1.0)

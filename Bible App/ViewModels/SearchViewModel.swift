@@ -6,7 +6,7 @@
 import Foundation
 
 /// Drives the search screen with verse lookup and recent search history.
-@Observable
+@MainActor @Observable
 final class SearchViewModel {
     var searchText = ""
     var result: BibleResponse?

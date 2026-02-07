@@ -8,7 +8,7 @@ import SwiftData
 
 /// Handles favorite verse mutations. Favorites data is fetched via @Query in the view;
 /// this ViewModel handles add, remove, and lookup operations only.
-@Observable
+@MainActor @Observable
 final class FavoritesViewModel {
 
     /// Create a FavoriteVerse from a BibleResponse and insert it into the model context.

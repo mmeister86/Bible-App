@@ -112,6 +112,9 @@ struct SearchView: View {
                             .symbolEffect(.bounce, value: isFavorited)
                             .contentTransition(.symbolEffect(.replace))
                     }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
 
                     Button {
                         shareTriggered.toggle()
@@ -121,6 +124,9 @@ struct SearchView: View {
                             .font(.title2)
                             .foregroundStyle(Color.secondaryText)
                     }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Share verse")
                 }
 
                 // "Search again" hint

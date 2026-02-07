@@ -19,7 +19,9 @@ struct Bible_AppApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            // Fallback to in-memory container for graceful degradation
+            print("Warning: Could not create persistent ModelContainer, falling back to in-memory: \(error)")
+            return try! ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         }
     }()
 

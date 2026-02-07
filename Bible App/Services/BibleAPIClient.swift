@@ -34,6 +34,12 @@ struct BibleAPIClient {
 
     private static let baseURL = "https://bible-api.com"
 
+    private static let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return decoder
+    }()
+
     /// Fetch a specific verse or passage by reference
     /// - Parameters:
     ///   - reference: Bible reference string (e.g. "John 3:16", "Romans 8:28-30")
@@ -101,7 +107,7 @@ struct BibleAPIClient {
         }
 
         do {
-            let decoded = try JSONDecoder().decode(BibleResponse.self, from: data)
+            let decoded = try decoder.decode(BibleResponse.self, from: data)
             return decoded
         } catch {
             throw BibleAPIError.decodingError(error)

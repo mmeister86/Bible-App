@@ -6,7 +6,7 @@
 import Foundation
 
 /// Drives the home / daily verse screen, using DailyVerseService for caching logic.
-@Observable
+@MainActor @Observable
 final class DailyVerseViewModel {
     var verse: BibleResponse?
     var isLoading = false

@@ -22,10 +22,14 @@ struct DailyVerseView: View {
     @Query private var favorites: [FavoriteVerse]
 
     /// Formatted date string for the heading (e.g. "Saturday, February 7")
-    private var formattedDate: String {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMMM d"
-        return formatter.string(from: Date())
+        return formatter
+    }()
+
+    private var formattedDate: String {
+        Self.dateFormatter.string(from: Date())
     }
 
     /// Whether the current verse is favorited
@@ -119,6 +123,9 @@ struct DailyVerseView: View {
                         .symbolEffect(.bounce, value: isFavorited)
                         .contentTransition(.symbolEffect(.replace))
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+                .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
 
                 // Share button
                 Button {
@@ -129,6 +136,9 @@ struct DailyVerseView: View {
                         .font(.title2)
                         .foregroundStyle(Color.secondaryText)
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+                .accessibilityLabel("Share verse")
             }
             .padding(.bottom, AppTheme.sectionGap)
 

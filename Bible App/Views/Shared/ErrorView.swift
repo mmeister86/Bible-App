@@ -20,6 +20,7 @@ struct ErrorView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(Color.accentGold)
                 .symbolEffect(.pulse, options: .repeating.speed(0.5), value: appeared)
+                .accessibilityHidden(true)
 
             Text(errorMessage)
                 .font(AppTheme.reference)

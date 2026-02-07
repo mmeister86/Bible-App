@@ -10,7 +10,7 @@ import SwiftData
 @Model
 final class FavoriteVerse {
     var id: UUID
-    var reference: String
+    @Attribute(.unique) var reference: String
     var text: String
     var bookName: String
     var chapter: Int

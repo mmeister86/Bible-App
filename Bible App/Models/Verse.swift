@@ -15,12 +15,4 @@ struct VerseEntry: Codable, Equatable, Identifiable {
 
     /// Unique identifier combining book, chapter, and verse
     var id: String { "\(bookId).\(chapter).\(verse)" }
-
-    enum CodingKeys: String, CodingKey {
-        case bookId = "book_id"
-        case bookName = "book_name"
-        case chapter
-        case verse
-        case text
-    }
 }

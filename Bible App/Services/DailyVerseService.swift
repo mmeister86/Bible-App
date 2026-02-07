@@ -12,12 +12,12 @@ struct DailyVerseService {
     private static let dailyVerseDataKey = "dailyVerseData"
     private static let dailyVerseDateKey = "dailyVerseDate"
 
-    private static var dateFormatter: DateFormatter {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = .current
         return formatter
-    }
+    }()
 
     private static var todayString: String {
         dateFormatter.string(from: Date())
@@ -31,12 +31,16 @@ struct DailyVerseService {
             return nil
         }
 
-        return try? JSONDecoder().decode(BibleResponse.self, from: data)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try? decoder.decode(BibleResponse.self, from: data)
     }
 
     /// Cache the given response as today's daily verse
     static func cacheDailyVerse(_ response: BibleResponse) {
-        if let data = try? JSONEncoder().encode(response) {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        if let data = try? encoder.encode(response) {
             UserDefaults.standard.set(data, forKey: dailyVerseDataKey)
             UserDefaults.standard.set(todayString, forKey: dailyVerseDateKey)
         }

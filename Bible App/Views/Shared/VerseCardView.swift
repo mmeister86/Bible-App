@@ -23,6 +23,7 @@ struct VerseCardView: View {
                 .lineLimit(1)
                 .frame(height: fontSize * 1.5)
                 .offset(x: -4)
+                .accessibilityHidden(true)
 
             // MARK: - Verse Text
             verseTextContent
@@ -40,6 +41,7 @@ struct VerseCardView: View {
                     .lineLimit(1)
                     .frame(height: fontSize * 1.2)
                     .offset(x: 4)
+                    .accessibilityHidden(true)
             }
 
             // MARK: - Subtle Divider
@@ -47,6 +49,7 @@ struct VerseCardView: View {
                 .fill(Color.dividerColor)
                 .frame(height: 1)
                 .padding(.vertical, 4)
+                .accessibilityHidden(true)
 
             // MARK: - Reference & Translation
             VStack(alignment: .leading, spacing: 8) {

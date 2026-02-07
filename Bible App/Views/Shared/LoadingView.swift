@@ -17,6 +17,7 @@ struct LoadingView: View {
             ProgressView()
                 .controlSize(.large)
                 .tint(Color.accentGold)
+                .accessibilityLabel("Loading")
 
             Text(message)
                 .font(AppTheme.reference)
