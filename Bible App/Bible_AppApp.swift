@@ -10,6 +10,12 @@ import SwiftData
 
 @main
 struct Bible_AppApp: App {
+    @AppStorage("appearanceMode") private var appearanceMode: Int = 0
+
+    private var preferredColorScheme: ColorScheme? {
+        AppearanceMode(rawValue: appearanceMode)?.colorScheme
+    }
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             FavoriteVerse.self,
@@ -28,6 +34,7 @@ struct Bible_AppApp: App {
     var body: some Scene {
         WindowGroup {
             MainTabView()
+                .preferredColorScheme(preferredColorScheme)
         }
         .modelContainer(sharedModelContainer)
     }

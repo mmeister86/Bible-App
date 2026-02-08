@@ -17,6 +17,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 translationSection
+                appearanceSection
                 readingSection
                 displaySection
                 aboutSection
@@ -39,6 +40,22 @@ struct SettingsView: View {
             .pickerStyle(.navigationLink)
         } header: {
             Label("Translation", systemImage: "book.fill")
+                .foregroundStyle(Color.accentGold)
+        }
+    }
+
+    // MARK: - Appearance
+
+    private var appearanceSection: some View {
+        Section {
+            Picker("Erscheinungsbild", selection: $viewModel.appearanceMode) {
+                ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
+                    Text(mode.label).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Label("Appearance", systemImage: "circle.lefthalf.filled")
                 .foregroundStyle(Color.accentGold)
         }
     }

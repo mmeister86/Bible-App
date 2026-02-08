@@ -4,6 +4,30 @@
 //
 
 import Foundation
+import SwiftUI
+
+/// Appearance mode for the app (System, Light, Dark).
+enum AppearanceMode: Int, CaseIterable {
+    case system = 0
+    case light = 1
+    case dark = 2
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .system: "System"
+        case .light: "Hell"
+        case .dark: "Dunkel"
+        }
+    }
+}
 
 /// Drives the settings screen. All properties are synced with UserDefaults
 /// so they persist across launches and are readable via @AppStorage elsewhere.
@@ -26,6 +50,10 @@ final class SettingsViewModel {
 
     // MARK: - Settings Properties
 
+    var appearanceMode: Int {
+        didSet { UserDefaults.standard.set(appearanceMode, forKey: "appearanceMode") }
+    }
+
     var selectedTranslation: String {
         didSet { UserDefaults.standard.set(selectedTranslation, forKey: "selectedTranslation") }
     }
@@ -43,6 +71,7 @@ final class SettingsViewModel {
     init() {
         let defaults = UserDefaults.standard
 
+        self.appearanceMode = defaults.integer(forKey: "appearanceMode")
         self.selectedTranslation = defaults.string(forKey: "selectedTranslation") ?? "web"
 
         // fontSize: UserDefaults returns 0.0 for unset keys, so default to 20
@@ -61,6 +90,7 @@ final class SettingsViewModel {
 
     /// Reset all settings to their default values.
     func resetToDefaults() {
+        appearanceMode = 0
         selectedTranslation = "web"
         fontSize = 20.0
         showVerseNumbers = true
