@@ -12,70 +12,73 @@ struct VerseShareView: View {
     let response: BibleResponse
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ZStack {
+            // Warm cream base
+            Color(hex: "#FFFDF7")
 
-            // Decorative cross icon
-            Image(systemName: "book.closed.fill")
-                .font(.system(size: 32))
-                .foregroundStyle(.white.opacity(0.6))
+            // Subtle center glow for depth
+            RadialGradient(
+                colors: [.white.opacity(0.3), .clear],
+                center: .center,
+                startRadius: 0,
+                endRadius: 540
+            )
 
-            // Opening decorative quote mark
-            Text("\u{201C}")
-                .font(.system(size: 64, design: .serif))
-                .foregroundStyle(.white.opacity(0.2))
-                .frame(height: 40)
+            // Content
+            VStack(spacing: 20) {
+                Spacer()
 
-            // Verse text
-            Text(response.text.trimmingCharacters(in: .whitespacesAndNewlines))
-                .font(.system(size: 28, design: .serif))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .lineSpacing(8)
-                .padding(.horizontal, 40)
+                // Decorative opening quote — gold accent
+                Text("\u{201C}")
+                    .font(.system(size: 120, design: .serif))
+                    .foregroundStyle(Color(hex: "#C9953C").opacity(0.25))
+                    .frame(height: 60)
 
-            // Closing decorative quote mark
-            Text("\u{201D}")
-                .font(.system(size: 64, design: .serif))
-                .foregroundStyle(.white.opacity(0.2))
-                .frame(height: 40)
+                // Verse text — maximum contrast
+                Text(response.text.trimmingCharacters(in: .whitespacesAndNewlines))
+                    .font(.system(size: 36, design: .serif))
+                    .foregroundStyle(Color(hex: "#1A1A1A"))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(10)
+                    .padding(.horizontal, 64)
 
-            // Subtle divider
-            Rectangle()
-                .fill(.white.opacity(0.2))
-                .frame(width: 60, height: 1)
-                .padding(.vertical, 4)
+                // Gold divider
+                Rectangle()
+                    .fill(Color(hex: "#C9953C").opacity(0.6))
+                    .frame(width: 58, height: 1.5)
+                    .padding(.vertical, 8)
 
-            // Reference
-            Text("— \(response.reference)")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                // Reference — gold accent
+                Text("— \(response.reference)")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(Color(hex: "#C9953C"))
 
-            // Translation
-            Text(response.translationName)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.6))
+                // Translation name — subtle, letter-spaced
+                Text(response.translationName)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color(hex: "#8A8A8A"))
+                    .tracking(0.5)
 
-            Spacer()
+                Spacer()
 
-            // App branding
-            Text("Bible App")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.4))
-                .padding(.bottom, 24)
+                // Branding
+                HStack(spacing: 6) {
+                    Image(systemName: "book.closed.fill")
+                        .font(.system(size: 12))
+                    Text("Bible App")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundStyle(Color(hex: "#B0A89A"))
+                .padding(.bottom, 40)
+            }
+        }
+        // Gold border frame
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C9953C").opacity(0.4), lineWidth: 1.5)
+                .padding(36)
         }
         .frame(width: 1080, height: 1080)
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(hex: "#2C1810"),
-                    Color(hex: "#4A2E1C"),
-                    Color(hex: "#6B4226")
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
     }
 
     // MARK: - Render to UIImage
