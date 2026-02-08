@@ -14,6 +14,7 @@ struct FavoritesView: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var favoritesViewModel = FavoritesViewModel()
+    @State private var selectedFavorite: FavoriteVerse?
     @State private var deleteCount = 0
 
     var body: some View {
@@ -40,16 +41,18 @@ struct FavoritesView: View {
         ScrollView {
             LazyVStack(spacing: AppTheme.itemSpacing) {
                 ForEach(favorites) { favorite in
-                    NavigationLink {
-                        FavoriteDetailView(
-                            favorite: favorite,
-                            favoritesViewModel: favoritesViewModel
-                        )
-                    } label: {
-                        FavoriteRowView(favorite: favorite)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
+                    FavoriteRowView(favorite: favorite)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedFavorite = favorite
+                        }
+                        .swipeToDelete {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                favoritesViewModel.removeFavorite(favorite, context: modelContext)
+                            }
+                            deleteCount += 1
+                        }
+                        .contextMenu {
                         Button(role: .destructive) {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 favoritesViewModel.removeFavorite(favorite, context: modelContext)
@@ -73,6 +76,12 @@ struct FavoritesView: View {
             }
             .padding(.horizontal, AppTheme.screenMargin)
             .padding(.vertical, AppTheme.itemSpacing)
+        }
+        .navigationDestination(item: $selectedFavorite) { favorite in
+            FavoriteDetailView(
+                favorite: favorite,
+                favoritesViewModel: favoritesViewModel
+            )
         }
     }
 
