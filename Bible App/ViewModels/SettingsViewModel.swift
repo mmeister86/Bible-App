@@ -66,6 +66,53 @@ final class SettingsViewModel {
         didSet { UserDefaults.standard.set(showVerseNumbers, forKey: "showVerseNumbers") }
     }
 
+    var notificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(notificationsEnabled, forKey: "notificationsEnabled")
+            if notificationsEnabled {
+                NotificationService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute)
+            } else {
+                NotificationService.cancelDailyReminder()
+            }
+        }
+    }
+
+    var reminderHour: Int {
+        didSet {
+            UserDefaults.standard.set(reminderHour, forKey: "reminderHour")
+            if notificationsEnabled {
+                NotificationService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute)
+            }
+        }
+    }
+
+    var reminderMinute: Int {
+        didSet {
+            UserDefaults.standard.set(reminderMinute, forKey: "reminderMinute")
+            if notificationsEnabled {
+                NotificationService.scheduleDailyReminder(hour: reminderHour, minute: reminderMinute)
+            }
+        }
+    }
+
+    /// Tracks whether the system denied notification permission.
+    var notificationPermissionDenied: Bool = false
+
+    /// Computed Date for the time picker, derived from reminderHour and reminderMinute.
+    var reminderTime: Date {
+        get {
+            var components = DateComponents()
+            components.hour = reminderHour
+            components.minute = reminderMinute
+            return Calendar.current.date(from: components) ?? Date()
+        }
+        set {
+            let components = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+            reminderHour = components.hour ?? 8
+            reminderMinute = components.minute ?? 0
+        }
+    }
+
     // MARK: - Init
 
     init() {
@@ -84,6 +131,21 @@ final class SettingsViewModel {
         } else {
             self.showVerseNumbers = true
         }
+
+        // Notifications: defaults to disabled, 8:00 AM
+        self.notificationsEnabled = defaults.bool(forKey: "notificationsEnabled")
+
+        if defaults.object(forKey: "reminderHour") != nil {
+            self.reminderHour = defaults.integer(forKey: "reminderHour")
+        } else {
+            self.reminderHour = 8
+        }
+
+        if defaults.object(forKey: "reminderMinute") != nil {
+            self.reminderMinute = defaults.integer(forKey: "reminderMinute")
+        } else {
+            self.reminderMinute = 0
+        }
     }
 
     // MARK: - Actions
@@ -93,11 +155,47 @@ final class SettingsViewModel {
         fontSize = size
     }
 
+    /// Called when the user toggles notifications ON.
+    /// Requests permission just-in-time and handles denial.
+    func enableNotifications() async {
+        let status = await NotificationService.authorizationStatus()
+
+        switch status {
+        case .notDetermined:
+            let granted = await NotificationService.requestAuthorization()
+            if granted {
+                notificationsEnabled = true
+                notificationPermissionDenied = false
+            } else {
+                notificationsEnabled = false
+                notificationPermissionDenied = true
+            }
+        case .authorized, .provisional, .ephemeral:
+            notificationsEnabled = true
+            notificationPermissionDenied = false
+        case .denied:
+            notificationsEnabled = false
+            notificationPermissionDenied = true
+        @unknown default:
+            notificationsEnabled = false
+        }
+    }
+
+    /// Called when the user disables notifications.
+    func disableNotifications() {
+        notificationsEnabled = false
+        notificationPermissionDenied = false
+    }
+
     /// Reset all settings to their default values.
     func resetToDefaults() {
         appearanceMode = 0
         selectedTranslation = "web"
         fontSize = 20.0
         showVerseNumbers = true
+        notificationsEnabled = false
+        reminderHour = 8
+        reminderMinute = 0
+        notificationPermissionDenied = false
     }
 }

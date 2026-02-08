@@ -21,6 +21,7 @@ struct SettingsView: View {
                 appearanceSection
                 readingSection
                 displaySection
+                notificationSection
                 aboutSection
                 resetSection
             }
@@ -109,6 +110,64 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Notifications
+
+    private var notificationSection: some View {
+        Section {
+            Toggle("Daily Reminder", isOn: Binding(
+                get: { viewModel.notificationsEnabled },
+                set: { newValue in
+                    if newValue {
+                        Task {
+                            await viewModel.enableNotifications()
+                        }
+                    } else {
+                        viewModel.disableNotifications()
+                    }
+                }
+            ))
+            .tint(Color.accentGold)
+
+            if viewModel.notificationPermissionDenied {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Notifications are disabled in system settings.")
+                        .font(.footnote)
+                        .foregroundStyle(Color.secondaryText)
+                }
+
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    Link(destination: settingsURL) {
+                        HStack {
+                            Text("Open Settings")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundStyle(Color.accentGold)
+                        }
+                    }
+                }
+            }
+
+            if viewModel.notificationsEnabled {
+                DatePicker(
+                    "Reminder Time",
+                    selection: $viewModel.reminderTime,
+                    displayedComponents: .hourAndMinute
+                )
+                .tint(Color.accentGold)
+            }
+        } header: {
+            Label("Notifications", systemImage: "bell.fill")
+                .foregroundStyle(Color.accentGold)
+        } footer: {
+            if viewModel.notificationsEnabled {
+                Text("You'll receive a daily reminder to read your verse.")
+                    .foregroundStyle(Color.secondaryText)
+            }
+        }
+    }
+
     // MARK: - About
 
     private var aboutSection: some View {
@@ -164,7 +223,7 @@ struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This will reset your translation, appearance, font size, and display preferences.")
+                Text("This will reset your translation, appearance, font size, display, and notification preferences.")
             }
         }
     }
