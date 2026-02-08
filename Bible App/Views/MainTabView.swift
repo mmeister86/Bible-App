@@ -15,7 +15,7 @@ struct MainTabView: View {
                     Label("Today", systemImage: "sun.max.fill")
                 }
 
-            RandomVerseView()
+            DiscoverView()
                 .tabItem {
                     Label("Discover", systemImage: "shuffle")
                 }
