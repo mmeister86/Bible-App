@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
     @State private var resetTriggered = false
     @State private var showResetConfirmation = false
+    @State private var sliderFontSize: Double = 20.0
 
     var body: some View {
         NavigationStack {
@@ -24,6 +25,9 @@ struct SettingsView: View {
                 resetSection
             }
             .navigationTitle("Settings")
+            .onAppear {
+                sliderFontSize = viewModel.fontSize
+            }
         }
         .sensoryFeedback(.warning, trigger: resetTriggered)
     }
@@ -68,20 +72,24 @@ struct SettingsView: View {
                 HStack {
                     Text("Font Size")
                     Spacer()
-                    Text("\(Int(viewModel.fontSize))pt")
+                    Text("\(Int(sliderFontSize))pt")
                         .foregroundStyle(Color.secondaryText)
                         .monospacedDigit()
                 }
 
-                Slider(value: $viewModel.fontSize, in: 16...32, step: 1)
-                    .tint(Color.accentGold)
+                Slider(value: $sliderFontSize, in: 16...32, step: 1) { editing in
+                    if !editing {
+                        viewModel.commitFontSize(sliderFontSize)
+                    }
+                }
+                .tint(Color.accentGold)
 
                 // Live preview with animation
                 Text("For God so loved the world...")
-                    .font(.system(size: viewModel.fontSize, design: .serif))
+                    .font(.system(size: sliderFontSize, design: .serif))
                     .foregroundStyle(Color.primaryText)
                     .lineSpacing(6)
-                    .animation(.easeInOut(duration: 0.15), value: viewModel.fontSize)
+                    .animation(.easeInOut(duration: 0.15), value: sliderFontSize)
             }
         } header: {
             Label("Reading", systemImage: "textformat.size")
@@ -150,6 +158,7 @@ struct SettingsView: View {
                 Button("Reset", role: .destructive) {
                     withAnimation {
                         viewModel.resetToDefaults()
+                        sliderFontSize = viewModel.fontSize
                     }
                     resetTriggered.toggle()
                 }

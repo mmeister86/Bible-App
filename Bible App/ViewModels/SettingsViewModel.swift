@@ -88,6 +88,11 @@ final class SettingsViewModel {
 
     // MARK: - Actions
 
+    /// Commit font size to persistent storage (call on slider release, not during drag).
+    func commitFontSize(_ size: Double) {
+        fontSize = size
+    }
+
     /// Reset all settings to their default values.
     func resetToDefaults() {
         appearanceMode = 0
