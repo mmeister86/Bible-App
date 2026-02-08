@@ -10,6 +10,8 @@ import SwiftData
 /// and smooth spring animations between verse changes.
 /// Includes haptic feedback, card appear transitions, and dark mode support.
 struct RandomVerseView: View {
+    var showHeader: Bool = true
+
     @State private var viewModel = RandomVerseViewModel()
     @State private var favoritesViewModel = FavoritesViewModel()
     @State private var showShareSheet = false
@@ -68,11 +70,13 @@ struct RandomVerseView: View {
     private var mainContent: some View {
         VStack(spacing: 0) {
             // MARK: - Header
-            Text("Discover")
-                .font(AppTheme.heading)
-                .foregroundStyle(Color.primaryText)
-                .padding(.top, AppTheme.sectionGap)
-                .padding(.bottom, AppTheme.screenMargin)
+            if showHeader {
+                Text("Discover")
+                    .font(AppTheme.heading)
+                    .foregroundStyle(Color.primaryText)
+                    .padding(.top, AppTheme.sectionGap)
+                    .padding(.bottom, AppTheme.screenMargin)
+            }
 
             Spacer()
 
