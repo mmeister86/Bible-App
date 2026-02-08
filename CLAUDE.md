@@ -48,3 +48,18 @@ MVVM with SwiftUI, targeting iOS 17+. The app fetches Bible verses from `bible-a
 - Adaptive light/dark colors defined via `Color(light:dark:)` extension
 - Test framework is Swift Testing (`@Test`, `#expect`) — not XCTest
 - See `AGENTS.md` for detailed data model diagrams, view hierarchy, and full API reference
+
+## Current Work in Progress
+
+**Uncommitted changes** (Search screen refactor):
+- **`SearchViewModel.swift`** — State transitions (`isLoading`, `result`, `errorMessage`, `clearSearch`) are now wrapped in `withAnimation(.easeInOut)` calls so animations are driven from the ViewModel instead of via `.animation()` modifiers on the view
+- **`SearchView.swift`** — Extracted result display into a separate `SearchResultContentView` (private struct) to narrow the `@Observable` observation scope and prevent NavigationStack layout feedback loops. Removed `.animation()` view modifiers that caused those loops. Uses `@Bindable var viewModel` in `body`
+
+**Recent commit history:**
+- `dff7a4c` — chore(settings): update settings view logic
+- `22e9bef` — feat(ui): add swipe to delete for favorites
+- `e910351` — feat(settings): enhance settings flow
+- `bdf85dc` — docs: update agents guide with skill system info
+- `2aa1e90` — feat(app): implement core features (verse display, search, favorites, daily verse)
+- `a446037` — feat: scaffold app architecture and project structure
+- `1aebc25` — Initial Commit

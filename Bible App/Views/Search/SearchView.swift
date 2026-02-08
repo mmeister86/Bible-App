@@ -29,22 +29,14 @@ struct SearchView: View {
         "Proverbs 3:5-6"
     ]
 
-    /// Whether the current result is favorited
-    private var isFavorited: Bool {
-        guard let result = viewModel.result else { return false }
-        return favoritesViewModel.isFavorited(reference: result.reference, in: favorites)
-    }
-
     var body: some View {
+        @Bindable var viewModel = viewModel
         NavigationStack {
             ZStack {
                 Color(.systemBackground)
                     .ignoresSafeArea()
 
                 content
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.isLoading)
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.result?.reference)
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.errorMessage)
             }
             .navigationTitle("Search")
             .searchable(
@@ -72,88 +64,24 @@ struct SearchView: View {
             errorState(errorMessage)
                 .transition(.opacity)
         } else if let result = viewModel.result {
-            resultContent(result)
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            SearchResultContentView(
+                result: result,
+                favorites: favorites,
+                favoritesViewModel: favoritesViewModel,
+                showShareSheet: $showShareSheet,
+                resultAppeared: $resultAppeared,
+                favoriteToggleCount: $favoriteToggleCount,
+                shareTriggered: $shareTriggered,
+                onClearSearch: {
+                    viewModel.clearSearch()
+                    resultAppeared = false
+                }
+            )
+            .transition(.opacity.combined(with: .scale(scale: 0.95)))
         } else {
             emptyState
                 .transition(.opacity)
         }
-    }
-
-    // MARK: - Result
-
-    private func resultContent(_ result: BibleResponse) -> some View {
-        ScrollView {
-            VStack(spacing: AppTheme.screenMargin) {
-                VerseCardView(response: result)
-                    .scaleEffect(resultAppeared ? 1.0 : 0.95)
-                    .opacity(resultAppeared ? 1.0 : 0.0)
-                    .onAppear {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            resultAppeared = true
-                        }
-                    }
-
-                // Action buttons
-                HStack(spacing: AppTheme.sectionGap) {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                            favoritesViewModel.toggleFavorite(
-                                for: result,
-                                in: favorites,
-                                context: modelContext
-                            )
-                        }
-                        favoriteToggleCount += 1
-                    } label: {
-                        Image(systemName: isFavorited ? "heart.fill" : "heart")
-                            .font(.title2)
-                            .foregroundStyle(isFavorited ? .red : Color.secondaryText)
-                            .symbolEffect(.bounce, value: isFavorited)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
-
-                    Button {
-                        shareTriggered.toggle()
-                        showShareSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.title2)
-                            .foregroundStyle(Color.secondaryText)
-                    }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel("Share verse")
-                }
-
-                // "Search again" hint
-                Button {
-                    viewModel.clearSearch()
-                    resultAppeared = false
-                } label: {
-                    Text("Search another verse")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.accentGold)
-                }
-            }
-            .padding(AppTheme.screenMargin)
-        }
-        .shareSheet(isPresented: $showShareSheet, items: shareItems(for: result))
-    }
-
-    // MARK: - Share Items
-
-    private func shareItems(for result: BibleResponse) -> [Any] {
-        var items: [Any] = [
-            "\(result.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(result.reference)"
-        ]
-        if let image = VerseShareView.renderImage(for: result) {
-            items.append(image)
-        }
-        return items
     }
 
     // MARK: - Empty State (Recent Searches + Suggested Verses)
@@ -290,6 +218,96 @@ struct SearchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Search Result Content View
+
+/// Extracted result view to narrow observation scope and prevent
+/// NavigationStack layout feedback loops.
+private struct SearchResultContentView: View {
+    let result: BibleResponse
+    let favorites: [FavoriteVerse]
+    @Bindable var favoritesViewModel: FavoritesViewModel
+    @Binding var showShareSheet: Bool
+    @Binding var resultAppeared: Bool
+    @Binding var favoriteToggleCount: Int
+    @Binding var shareTriggered: Bool
+    var onClearSearch: () -> Void
+
+    @Environment(\.modelContext) private var modelContext
+
+    private var isFavorited: Bool {
+        favoritesViewModel.isFavorited(reference: result.reference, in: favorites)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: AppTheme.screenMargin) {
+                VerseCardView(response: result)
+                    .scaleEffect(resultAppeared ? 1.0 : 0.95)
+                    .opacity(resultAppeared ? 1.0 : 0.0)
+                    .onAppear {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            resultAppeared = true
+                        }
+                    }
+
+                HStack(spacing: AppTheme.sectionGap) {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            favoritesViewModel.toggleFavorite(
+                                for: result,
+                                in: favorites,
+                                context: modelContext
+                            )
+                        }
+                        favoriteToggleCount += 1
+                    } label: {
+                        Image(systemName: isFavorited ? "heart.fill" : "heart")
+                            .font(.title2)
+                            .foregroundStyle(isFavorited ? .red : Color.secondaryText)
+                            .symbolEffect(.bounce, value: isFavorited)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
+
+                    Button {
+                        shareTriggered.toggle()
+                        showShareSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.title2)
+                            .foregroundStyle(Color.secondaryText)
+                    }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Share verse")
+                }
+
+                Button {
+                    onClearSearch()
+                } label: {
+                    Text("Search another verse")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.accentGold)
+                }
+            }
+            .padding(AppTheme.screenMargin)
+        }
+        .shareSheet(isPresented: $showShareSheet, items: shareItems(for: result))
+    }
+
+    private func shareItems(for result: BibleResponse) -> [Any] {
+        var items: [Any] = [
+            "\(result.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(result.reference)"
+        ]
+        if let image = VerseShareView.renderImage(for: result) {
+            items.append(image)
+        }
+        return items
     }
 }
 

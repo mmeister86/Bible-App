@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 /// Drives the search screen with verse lookup and recent search history.
 @MainActor @Observable
@@ -27,8 +28,10 @@ final class SearchViewModel {
         guard !query.isEmpty else { return }
         guard !isLoading else { return }
 
-        isLoading = true
-        errorMessage = nil
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isLoading = true
+            errorMessage = nil
+        }
 
         let translation = UserDefaults.standard.string(forKey: "selectedTranslation") ?? "web"
 
@@ -37,27 +40,36 @@ final class SearchViewModel {
                 reference: query,
                 translation: translation
             )
-            result = response
+            withAnimation(.easeInOut(duration: 0.3)) {
+                result = response
+                isLoading = false
+            }
             addToRecent(query)
         } catch let error as BibleAPIError {
-            switch error {
-            case .notFound:
-                errorMessage = "Verse not found. Try e.g. John 3:16"
-            default:
-                errorMessage = error.localizedDescription
+            withAnimation(.easeInOut(duration: 0.3)) {
+                switch error {
+                case .notFound:
+                    errorMessage = "Verse not found. Try e.g. John 3:16"
+                default:
+                    errorMessage = error.localizedDescription
+                }
+                isLoading = false
             }
         } catch {
-            errorMessage = error.localizedDescription
+            withAnimation(.easeInOut(duration: 0.3)) {
+                errorMessage = error.localizedDescription
+                isLoading = false
+            }
         }
-
-        isLoading = false
     }
 
     /// Clear the current search result and text.
     func clearSearch() {
-        searchText = ""
-        result = nil
-        errorMessage = nil
+        withAnimation(.easeInOut(duration: 0.3)) {
+            searchText = ""
+            result = nil
+            errorMessage = nil
+        }
     }
 
     /// Add a query to the recent searches list (most recent first, max 10).
