@@ -6,7 +6,7 @@ A beautifully crafted iOS app for reading, discovering, and saving Bible verses 
 
 **Daily Verse** — Start each day with an inspiring verse of the day, presented on an elegantly designed full-screen card with smooth spring animations.
 
-**Discover** — Tap to receive a random verse from Scripture. A simple way to explore passages you might never have found on your own.
+**Discover** — Browse Bible verses by mood or life situation. Choose from 10 curated categories like Comfort, Hope, Courage, and Gratitude — or tap Random Verse to discover something unexpected.
 
 **Search** — Look up any Bible reference (e.g. *John 3:16*, *Romans 8:28-30*) across multiple translations and see results with refined serif typography and inline verse numbers.
 
@@ -36,7 +36,8 @@ Bible App/
 ├── ViewModels/      @Observable view models (one per screen)
 ├── Views/
 │   ├── DailyVerse/  Verse of the day screen
-│   ├── RandomVerse/ Discover screen
+│   ├── Discover/    Mood categories & category verse browser
+│   ├── RandomVerse/ Random verse shuffle
 │   ├── Search/      Verse lookup
 │   ├── Favorites/   Saved verses list
 │   ├── Settings/    Preferences
