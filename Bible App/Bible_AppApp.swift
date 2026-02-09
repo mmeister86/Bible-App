@@ -9,13 +9,29 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 
-/// Suppresses notification banners when the app is in the foreground.
+extension Notification.Name {
+    /// Posted when the user taps the daily verse notification.
+    static let didTapDailyVerseNotification = Notification.Name("didTapDailyVerseNotification")
+}
+
+/// Handles notification presentation and user interaction with notifications.
 final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    /// Suppresses notification banners when the app is in the foreground.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         return []
+    }
+
+    /// Called when the user taps a delivered notification.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        await MainActor.run {
+            NotificationCenter.default.post(name: .didTapDailyVerseNotification, object: nil)
+        }
     }
 }
 

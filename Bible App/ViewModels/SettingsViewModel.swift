@@ -23,8 +23,8 @@ enum AppearanceMode: Int, CaseIterable {
     var label: String {
         switch self {
         case .system: "System"
-        case .light: "Hell"
-        case .dark: "Dunkel"
+        case .light: "Light"
+        case .dark: "Dark"
         }
     }
 }

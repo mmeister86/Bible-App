@@ -53,7 +53,7 @@ struct SettingsView: View {
 
     private var appearanceSection: some View {
         Section {
-            Picker("Erscheinungsbild", selection: $viewModel.appearanceMode) {
+            Picker("Appearance", selection: $viewModel.appearanceMode) {
                 ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
                     Text(mode.label).tag(mode.rawValue)
                 }
