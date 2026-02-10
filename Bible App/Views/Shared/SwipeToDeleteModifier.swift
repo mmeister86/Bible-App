@@ -33,7 +33,7 @@ private struct SwipeToDeleteModifier: ViewModifier {
             content
                 .offset(x: offset)
         }
-        .simultaneousGesture(swipeGesture)
+        .gesture(swipeGesture)
         .onChange(of: isDragging) { _, dragging in
             // When gesture is cancelled (e.g. finger moves out of bounds),
             // GestureState auto-resets isDragging to false — snap back.
@@ -91,7 +91,7 @@ private struct SwipeToDeleteModifier: ViewModifier {
                 let predictedDx = value.predictedEndTranslation.width
 
                 // Trigger delete if past threshold or if velocity is high enough
-                let pastThreshold = abs(dx) > deleteThreshold
+                let pastThreshold = dx < 0 && abs(dx) > deleteThreshold
                 let fastSwipe = abs(predictedDx) > velocityThreshold && dx < 0
 
                 if pastThreshold || fastSwipe {
