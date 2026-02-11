@@ -45,21 +45,46 @@ struct SearchView: View {
             )
             .onSubmit(of: .search) {
                 resultAppeared = false
-                Task { await viewModel.search() }
+                Task { await searchWithCache() }
             }
         }
         // Haptic feedback
         .sensoryFeedback(.impact(weight: .medium), trigger: favoriteToggleCount)
         .sensoryFeedback(.success, trigger: shareTriggered)
     }
+    
+    // MARK: - Search Logic
+    
+    private func searchWithCache() async {
+        // Check cache first
+        if let reference = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+           let cached = await VerseCacheService.shared.getCached(for: reference) {
+            viewModel.result = cached
+            viewModel.isLoading = false
+            viewModel.errorMessage = nil
+        }
+        
+        // Then perform network search
+        await viewModel.search()
+        
+        // Cache the result
+        if let result = viewModel.result {
+            await VerseCacheService.shared.cache(result, for: viewModel.searchText)
+        }
+    }
 
     // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.isLoading {
-            LoadingView(message: "Searching...")
-                .transition(.opacity)
+        if viewModel.isLoading && viewModel.result == nil {
+            // Show skeleton during initial search
+            VStack(spacing: AppTheme.screenMargin) {
+                VerseSkeletonView()
+                    .padding(.horizontal, AppTheme.screenMargin)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transition(.opacity)
         } else if let errorMessage = viewModel.errorMessage, viewModel.result == nil {
             errorState(errorMessage)
                 .transition(.opacity)
@@ -107,6 +132,7 @@ struct SearchView: View {
                             }
                             .font(.caption)
                             .foregroundStyle(Color.accentGold)
+                            .accessibilityLabel("Clear recent searches")
                         }
 
                         FlowLayout(spacing: 8) {
@@ -114,7 +140,7 @@ struct SearchView: View {
                                 Button {
                                     viewModel.searchText = query
                                     resultAppeared = false
-                                    Task { await viewModel.search() }
+                                    Task { await searchWithCache() }
                                 } label: {
                                     Text(query)
                                         .font(.subheadline)
@@ -131,9 +157,11 @@ struct SearchView: View {
                                         )
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("Search for \(query)")
                             }
                         }
                     }
+                    .accessibilityElement(children: .contain)
                 }
 
                 // "Try these" Suggested Verses
@@ -147,7 +175,7 @@ struct SearchView: View {
                             Button {
                                 viewModel.searchText = verse
                                 resultAppeared = false
-                                Task { await viewModel.search() }
+                                Task { await searchWithCache() }
                             } label: {
                                 HStack(spacing: 6) {
                                     Image(systemName: "book.fill")
@@ -169,15 +197,18 @@ struct SearchView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Search for \(verse)")
                         }
                     }
                 }
+                .accessibilityElement(children: .contain)
 
                 // Hint
                 VStack(spacing: 12) {
                     Image(systemName: "text.book.closed")
                         .font(.system(size: 40))
                         .foregroundStyle(Color.secondaryText.opacity(0.5))
+                        .accessibilityHidden(true)
 
                     Text("Search for a verse by reference")
                         .font(AppTheme.reference)
@@ -190,6 +221,7 @@ struct SearchView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, AppTheme.screenMargin)
+                .accessibilityElement(children: .combine)
             }
             .padding(AppTheme.screenMargin)
         }
@@ -198,26 +230,15 @@ struct SearchView: View {
     // MARK: - Error State
 
     private func errorState(_ message: String) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.secondaryText.opacity(0.5))
-
-            Text(message)
-                .font(AppTheme.reference)
-                .foregroundStyle(Color.secondaryText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, AppTheme.screenMargin)
-
-            Button {
+        EmptyStateView(
+            icon: "magnifyingglass",
+            title: "Verse not found",
+            message: "We couldn't find that verse. Please check the reference and try again.",
+            action: {
                 viewModel.clearSearch()
-            } label: {
-                Text("Try a different search")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color.accentGold)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            },
+            actionLabel: "Try a different search"
+        )
     }
 }
 
@@ -248,14 +269,15 @@ private struct SearchResultContentView: View {
                     .scaleEffect(resultAppeared ? 1.0 : 0.95)
                     .opacity(resultAppeared ? 1.0 : 0.0)
                     .onAppear {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        withAnimation(AppTheme.cardAppearAnimation) {
                             resultAppeared = true
                         }
                     }
 
-                HStack(spacing: AppTheme.sectionGap) {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                ActionButtonsContainer(
+                    isFavorited: isFavorited,
+                    onFavoriteToggle: {
+                        withAnimation(AppTheme.buttonSpringAnimation) {
                             favoritesViewModel.toggleFavorite(
                                 for: result,
                                 in: favorites,
@@ -263,37 +285,22 @@ private struct SearchResultContentView: View {
                             )
                         }
                         favoriteToggleCount += 1
-                    } label: {
-                        Image(systemName: isFavorited ? "heart.fill" : "heart")
-                            .font(.title2)
-                            .foregroundStyle(isFavorited ? .red : Color.secondaryText)
-                            .symbolEffect(.bounce, value: isFavorited)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
-
-                    Button {
+                    },
+                    onShare: {
                         shareTriggered.toggle()
                         showShareSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.title2)
-                            .foregroundStyle(Color.secondaryText)
                     }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel("Share verse")
-                }
+                )
 
                 Button {
                     onClearSearch()
                 } label: {
                     Text("Search another verse")
-                        .font(.subheadline)
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.accentGold)
                 }
+                .frame(minWidth: AppTheme.minTouchTarget, minHeight: AppTheme.minTouchTarget)
+                .accessibilityLabel("Clear search and search for another verse")
             }
             .padding(AppTheme.screenMargin)
         }
@@ -367,6 +374,14 @@ private struct FlowLayout: Layout {
             positions: positions,
             size: CGSize(width: totalWidth, height: totalHeight)
         )
+    }
+}
+
+// MARK: - String Extension
+
+extension String {
+    var nilIfEmpty: String? {
+        self.isEmpty ? nil : self
     }
 }
 

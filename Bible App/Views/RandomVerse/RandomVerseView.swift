@@ -33,7 +33,7 @@ struct RandomVerseView: View {
 
     var body: some View {
         ZStack {
-            backgroundGradient
+            AppTheme.backgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
 
             content
@@ -54,8 +54,18 @@ struct RandomVerseView: View {
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading && viewModel.verse == nil {
-            LoadingView(message: "Discovering a verse...")
-                .transition(.opacity)
+            VStack(spacing: 0) {
+                if showHeader {
+                    headerView
+                }
+                Spacer()
+                VerseSkeletonView()
+                    .padding(.horizontal, AppTheme.screenMargin)
+                Spacer()
+                shuffleButton
+                    .padding(.bottom, AppTheme.sectionGap)
+            }
+            .transition(.opacity)
         } else if let errorMessage = viewModel.errorMessage, viewModel.verse == nil {
             ErrorView(errorMessage: errorMessage) {
                 Task { await viewModel.fetchRandomVerse() }
@@ -71,11 +81,7 @@ struct RandomVerseView: View {
         VStack(spacing: 0) {
             // MARK: - Header
             if showHeader {
-                Text("Discover")
-                    .font(AppTheme.heading)
-                    .foregroundStyle(Color.primaryText)
-                    .padding(.top, AppTheme.sectionGap)
-                    .padding(.bottom, AppTheme.screenMargin)
+                headerView
             }
 
             Spacer()
@@ -93,7 +99,7 @@ struct RandomVerseView: View {
                         .scaleEffect(cardAppeared ? 1.0 : 0.95)
                         .opacity(cardAppeared ? 1.0 : 0.0)
                         .onAppear {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            withAnimation(AppTheme.cardAppearAnimation) {
                                 cardAppeared = true
                             }
                         }
@@ -103,11 +109,11 @@ struct RandomVerseView: View {
             Spacer()
 
             // MARK: - Action Buttons
-            HStack(spacing: AppTheme.sectionGap) {
-                // Favorite toggle
-                Button {
+            ActionButtonsContainer(
+                isFavorited: isFavorited,
+                onFavoriteToggle: {
                     guard let verse = viewModel.verse else { return }
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    withAnimation(AppTheme.buttonSpringAnimation) {
                         favoritesViewModel.toggleFavorite(
                             for: verse,
                             in: favorites,
@@ -115,69 +121,67 @@ struct RandomVerseView: View {
                         )
                     }
                     favoriteToggleCount += 1
-                } label: {
-                    Image(systemName: isFavorited ? "heart.fill" : "heart")
-                        .font(.title2)
-                        .foregroundStyle(isFavorited ? .red : Color.secondaryText)
-                        .symbolEffect(.bounce, value: isFavorited)
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-                .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
-
-                // Share button
-                Button {
+                },
+                onShare: {
                     shareTriggered.toggle()
                     showShareSheet = true
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.title2)
-                        .foregroundStyle(Color.secondaryText)
                 }
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-                .accessibilityLabel("Share verse")
-            }
+            )
             .padding(.bottom, AppTheme.screenMargin)
 
             // MARK: - Shuffle Button
-            Button {
-                shuffleCount += 1
-                Task {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                        verseID = UUID()
-                    }
-                    await viewModel.shuffle()
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                        verseID = UUID()
-                    }
-                }
-            } label: {
-                Label("Shuffle", systemImage: "shuffle")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 14)
-                    .background(
-                        Capsule()
-                            .fill(Color.accentGold)
-                    )
-                    .shadow(
-                        color: Color.accentGold.opacity(0.3),
-                        radius: 8,
-                        y: 4
-                    )
-            }
-            .accessibilityLabel("Load new verse")
-            .buttonStyle(.plain)
-            .disabled(viewModel.isLoading)
-            .opacity(viewModel.isLoading ? 0.6 : 1.0)
-            .scaleEffect(viewModel.isLoading ? 0.95 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: viewModel.isLoading)
-            .padding(.bottom, AppTheme.sectionGap)
+            shuffleButton
+                .padding(.bottom, AppTheme.sectionGap)
         }
         .shareSheet(isPresented: $showShareSheet, items: shareItems)
+    }
+    
+    // MARK: - Subviews
+    
+    private var headerView: some View {
+        Text("Discover")
+            .font(AppTheme.heading)
+            .foregroundStyle(Color.primaryText)
+            .padding(.top, AppTheme.sectionGap)
+            .padding(.bottom, AppTheme.screenMargin)
+            .accessibilityAddTraits(.isHeader)
+    }
+    
+    private var shuffleButton: some View {
+        Button {
+            shuffleCount += 1
+            Task {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    verseID = UUID()
+                }
+                await viewModel.shuffle()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    verseID = UUID()
+                }
+            }
+        } label: {
+            Label("Shuffle", systemImage: "shuffle")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 14)
+                .background(
+                    Capsule()
+                        .fill(Color.accentGold)
+                )
+                .shadow(
+                    color: Color.accentGold.opacity(0.3),
+                    radius: 8,
+                    y: 4
+                )
+        }
+        .accessibilityLabel("Load new verse")
+        .accessibilityHint("Double-tap to discover a new random verse")
+        .buttonStyle(.plain)
+        .disabled(viewModel.isLoading)
+        .opacity(viewModel.isLoading ? 0.6 : 1.0)
+        .scaleEffect(viewModel.isLoading ? 0.95 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: viewModel.isLoading)
     }
 
     // MARK: - Share Items
@@ -191,18 +195,6 @@ struct RandomVerseView: View {
             items.append(image)
         }
         return items
-    }
-
-    // MARK: - Background (adapts to color scheme)
-
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [Color(hex: "#1C1C1E"), Color(.systemBackground)]
-                : [Color.cardBackground.opacity(0.5), Color(.systemBackground)],
-            startPoint: .top,
-            endPoint: .bottom
-        )
     }
 }
 

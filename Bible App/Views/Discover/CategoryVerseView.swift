@@ -41,7 +41,7 @@ struct CategoryVerseView: View {
 
     var body: some View {
         ZStack {
-            backgroundGradient
+            AppTheme.backgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
 
             content
@@ -61,8 +61,16 @@ struct CategoryVerseView: View {
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading && viewModel.verse == nil {
-            LoadingView(message: "Loading verse...")
-                .transition(.opacity)
+            VStack(spacing: 0) {
+                categoryHeader
+                Spacer()
+                VerseSkeletonView()
+                    .padding(.horizontal, AppTheme.screenMargin)
+                Spacer()
+                navigationButtons
+                    .padding(.bottom, AppTheme.sectionGap)
+            }
+            .transition(.opacity)
         } else if let errorMessage = viewModel.errorMessage, viewModel.verse == nil {
             ErrorView(errorMessage: errorMessage) {
                 Task { await viewModel.fetchCurrentVerse() }
@@ -98,7 +106,7 @@ struct CategoryVerseView: View {
                         .scaleEffect(cardAppeared ? 1.0 : 0.95)
                         .opacity(cardAppeared ? 1.0 : 0.0)
                         .onAppear {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            withAnimation(AppTheme.cardAppearAnimation) {
                                 cardAppeared = true
                             }
                         }
@@ -108,8 +116,25 @@ struct CategoryVerseView: View {
             Spacer()
 
             // MARK: - Action Buttons
-            actionButtons
-                .padding(.bottom, AppTheme.screenMargin)
+            ActionButtonsContainer(
+                isFavorited: isFavorited,
+                onFavoriteToggle: {
+                    guard let verse = viewModel.verse else { return }
+                    withAnimation(AppTheme.buttonSpringAnimation) {
+                        favoritesViewModel.toggleFavorite(
+                            for: verse,
+                            in: favorites,
+                            context: modelContext
+                        )
+                    }
+                    favoriteToggleCount += 1
+                },
+                onShare: {
+                    shareTriggered.toggle()
+                    showShareSheet = true
+                }
+            )
+            .padding(.bottom, AppTheme.screenMargin)
 
             // MARK: - Navigation Buttons
             navigationButtons
@@ -125,52 +150,14 @@ struct CategoryVerseView: View {
             Image(systemName: category.icon)
                 .font(.title3)
                 .foregroundStyle(categoryColor)
+                .accessibilityHidden(true)
 
             Text(viewModel.progress)
                 .font(.caption)
                 .foregroundStyle(Color.secondaryText)
+                .accessibilityLabel("Verse \(viewModel.currentIndex + 1) of \(category.verseReferences.count)")
         }
-    }
-
-    // MARK: - Action Buttons
-
-    private var actionButtons: some View {
-        HStack(spacing: AppTheme.sectionGap) {
-            // Favorite toggle
-            Button {
-                guard let verse = viewModel.verse else { return }
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                    favoritesViewModel.toggleFavorite(
-                        for: verse,
-                        in: favorites,
-                        context: modelContext
-                    )
-                }
-                favoriteToggleCount += 1
-            } label: {
-                Image(systemName: isFavorited ? "heart.fill" : "heart")
-                    .font(.title2)
-                    .foregroundStyle(isFavorited ? .red : Color.secondaryText)
-                    .symbolEffect(.bounce, value: isFavorited)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-            .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
-
-            // Share button
-            Button {
-                shareTriggered.toggle()
-                showShareSheet = true
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.title2)
-                    .foregroundStyle(Color.secondaryText)
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-            .accessibilityLabel("Share verse")
-        }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Navigation Buttons
@@ -209,6 +196,8 @@ struct CategoryVerseView: View {
             .buttonStyle(.plain)
             .disabled(!viewModel.hasPrevious)
             .opacity(viewModel.hasPrevious ? 1.0 : 0.5)
+            .accessibilityLabel("Previous verse")
+            .accessibilityHint("Double-tap to go to the previous verse")
 
             // Shuffle within category
             Button {
@@ -236,6 +225,8 @@ struct CategoryVerseView: View {
             }
             .buttonStyle(.plain)
             .disabled(viewModel.isLoading)
+            .accessibilityLabel("Shuffle")
+            .accessibilityHint("Double-tap to load a random verse from this category")
 
             // Next
             Button {
@@ -270,6 +261,8 @@ struct CategoryVerseView: View {
             .buttonStyle(.plain)
             .disabled(!viewModel.hasNext)
             .opacity(viewModel.hasNext ? 1.0 : 0.5)
+            .accessibilityLabel("Next verse")
+            .accessibilityHint("Double-tap to go to the next verse")
         }
         .padding(.horizontal, AppTheme.screenMargin)
     }
@@ -285,18 +278,6 @@ struct CategoryVerseView: View {
             items.append(image)
         }
         return items
-    }
-
-    // MARK: - Background
-
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [Color(hex: "#1C1C1E"), Color(.systemBackground)]
-                : [Color.cardBackground.opacity(0.5), Color(.systemBackground)],
-            startPoint: .top,
-            endPoint: .bottom
-        )
     }
 }
 

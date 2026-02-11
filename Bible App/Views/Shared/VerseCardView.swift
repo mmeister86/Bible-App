@@ -11,8 +11,32 @@ import SwiftUI
 struct VerseCardView: View {
     let response: BibleResponse
 
-    @AppStorage("fontSize") private var fontSize: Double = 20.0
+    @AppStorage("fontSize") private var userFontSize: Double = 20.0
     @AppStorage("showVerseNumbers") private var showVerseNumbers: Bool = true
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    /// Calculated font size combining user preference with Dynamic Type
+    private var fontSize: CGFloat {
+        let baseSize = userFontSize
+        // Scale with Dynamic Type (xSmall to accessibilityLarge)
+        let scale: CGFloat
+        switch dynamicTypeSize {
+        case .xSmall: scale = 0.8
+        case .small: scale = 0.85
+        case .medium: scale = 0.9
+        case .large: scale = 1.0
+        case .xLarge: scale = 1.1
+        case .xxLarge: scale = 1.2
+        case .xxxLarge: scale = 1.35
+        case .accessibility1: scale = 1.5
+        case .accessibility2: scale = 1.65
+        case .accessibility3: scale = 1.8
+        case .accessibility4: scale = 2.0
+        case .accessibility5: scale = 2.2
+        default: scale = 1.0
+        }
+        return baseSize * scale
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -27,9 +51,9 @@ struct VerseCardView: View {
 
             // MARK: - Verse Text
             verseTextContent
-                .font(AppTheme.verseText(size: fontSize))
+                .font(.system(size: fontSize, design: .serif))
                 .foregroundStyle(Color.primaryText)
-                .lineSpacing(8)
+                .lineSpacing(fontSize * 0.4)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             // Decorative closing quote (right-aligned)
@@ -69,6 +93,8 @@ struct VerseCardView: View {
             x: 0,
             y: AppTheme.cardShadowY
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     // MARK: - Subviews
@@ -81,6 +107,12 @@ struct VerseCardView: View {
         } else {
             Text(response.text.trimmingCharacters(in: .whitespacesAndNewlines))
         }
+    }
+    
+    /// Combined accessibility label for VoiceOver
+    private var accessibilityLabel: String {
+        let text = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return "\(response.reference), \(text), \(response.translationName) translation"
     }
 
     /// Concatenates verses with superscript-style verse numbers (gold-tinted, smaller)
@@ -122,27 +154,63 @@ struct VerseCardView: View {
                 Capsule()
                     .fill(Color.accentGold)
             )
+            .accessibilityLabel("Translation: \(response.translationName)")
     }
 }
 
 #Preview {
-    VerseCardView(
-        response: BibleResponse(
-            reference: "John 3:16",
-            verses: [
-                VerseEntry(
-                    bookId: "JHN",
-                    bookName: "John",
-                    chapter: 3,
-                    verse: 16,
-                    text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n"
-                )
-            ],
-            text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n",
-            translationId: "web",
-            translationName: "World English Bible",
-            translationNote: "Public Domain"
+    VStack(spacing: 20) {
+        VerseCardView(
+            response: BibleResponse(
+                reference: "John 3:16",
+                verses: [
+                    VerseEntry(
+                        bookId: "JHN",
+                        bookName: "John",
+                        chapter: 3,
+                        verse: 16,
+                        text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n"
+                    )
+                ],
+                text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n",
+                translationId: "web",
+                translationName: "World English Bible",
+                translationNote: "Public Domain"
+            )
         )
-    )
+        
+        VerseCardView(
+            response: BibleResponse(
+                reference: "Psalm 23:1-3",
+                verses: [
+                    VerseEntry(
+                        bookId: "PSA",
+                        bookName: "Psalm",
+                        chapter: 23,
+                        verse: 1,
+                        text: "The LORD is my shepherd; I shall not want."
+                    ),
+                    VerseEntry(
+                        bookId: "PSA",
+                        bookName: "Psalm",
+                        chapter: 23,
+                        verse: 2,
+                        text: "He maketh me to lie down in green pastures: he leadeth me beside the still waters."
+                    ),
+                    VerseEntry(
+                        bookId: "PSA",
+                        bookName: "Psalm",
+                        chapter: 23,
+                        verse: 3,
+                        text: "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake."
+                    )
+                ],
+                text: "The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters. He restoreth my soul.",
+                translationId: "kjv",
+                translationName: "King James Version",
+                translationNote: "Public Domain"
+            )
+        )
+    }
     .padding(AppTheme.screenMargin)
 }

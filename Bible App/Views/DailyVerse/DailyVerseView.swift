@@ -16,6 +16,7 @@ struct DailyVerseView: View {
     @State private var cardAppeared = false
     @State private var favoriteToggleCount = 0
     @State private var shareTriggered = false
+    @State private var isRefreshing = false
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
@@ -40,30 +41,57 @@ struct DailyVerseView: View {
 
     var body: some View {
         ZStack {
-            backgroundGradient
+            AppTheme.backgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
 
             content
         }
         .task {
-            await viewModel.loadDailyVerse()
+            await loadVerse()
         }
         // Haptic feedback for favorite toggle
         .sensoryFeedback(.impact(weight: .medium), trigger: favoriteToggleCount)
         // Haptic feedback for share
         .sensoryFeedback(.success, trigger: shareTriggered)
     }
+    
+    // MARK: - Loading Logic
+    
+    private func loadVerse() async {
+        // Try to load cached verse first for instant display
+        if let cached = await VerseCacheService.shared.getCachedDailyVerse() {
+            viewModel.verse = cached
+            viewModel.isLoading = false
+        }
+        
+        // Then fetch fresh data
+        await viewModel.loadDailyVerse()
+        
+        // Cache the result
+        if let verse = viewModel.verse {
+            await VerseCacheService.shared.cacheDailyVerse(verse)
+        }
+    }
 
     // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.isLoading {
-            LoadingView(message: "Loading verse of the day...")
-                .transition(.opacity)
-        } else if let errorMessage = viewModel.errorMessage {
+        if viewModel.isLoading && viewModel.verse == nil {
+            // Show skeleton during initial load
+            VStack(spacing: 0) {
+                headerView
+                Spacer()
+                VerseSkeletonView()
+                    .padding(.horizontal, AppTheme.screenMargin)
+                Spacer()
+                bottomHintView
+            }
+            .transition(.opacity)
+        } else if let errorMessage = viewModel.errorMessage, viewModel.verse == nil {
+            // Show error state
             ErrorView(errorMessage: errorMessage) {
-                Task { await viewModel.refresh() }
+                Task { await loadVerse() }
             }
             .transition(.opacity)
         } else if let verse = viewModel.verse {
@@ -73,82 +101,89 @@ struct DailyVerseView: View {
     }
 
     private func verseContent(_ verse: BibleResponse) -> some View {
-        VStack(spacing: 0) {
-            // MARK: - Header
-            VStack(spacing: 4) {
-                Text("Verse of the Day")
-                    .font(AppTheme.heading)
-                    .foregroundStyle(Color.primaryText)
+        ScrollView {
+            VStack(spacing: 0) {
+                // MARK: - Header
+                headerView
+                
+                Spacer()
+                    .frame(height: AppTheme.screenMargin)
 
-                Text(formattedDate)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.secondaryText)
-            }
-            .padding(.top, AppTheme.sectionGap)
-            .padding(.bottom, AppTheme.screenMargin)
-
-            Spacer()
-
-            // MARK: - Verse Card (animated appear)
-            ScrollView {
+                // MARK: - Verse Card (animated appear)
                 VerseCardView(response: verse)
                     .padding(.horizontal, AppTheme.screenMargin)
                     .scaleEffect(cardAppeared ? 1.0 : 0.95)
                     .opacity(cardAppeared ? 1.0 : 0.0)
                     .onAppear {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        withAnimation(AppTheme.cardAppearAnimation) {
                             cardAppeared = true
                         }
                     }
-            }
 
-            Spacer()
-
-            // MARK: - Action Buttons
-            HStack(spacing: AppTheme.sectionGap) {
-                // Favorite toggle
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        favoritesViewModel.toggleFavorite(
-                            for: verse,
-                            in: favorites,
-                            context: modelContext
-                        )
+                // MARK: - Action Buttons
+                ActionButtonsContainer(
+                    isFavorited: isFavorited,
+                    onFavoriteToggle: {
+                        withAnimation(AppTheme.buttonSpringAnimation) {
+                            favoritesViewModel.toggleFavorite(
+                                for: verse,
+                                in: favorites,
+                                context: modelContext
+                            )
+                        }
+                        favoriteToggleCount += 1
+                    },
+                    onShare: {
+                        shareTriggered.toggle()
+                        showShareSheet = true
                     }
-                    favoriteToggleCount += 1
-                } label: {
-                    Image(systemName: isFavorited ? "heart.fill" : "heart")
-                        .font(.title2)
-                        .foregroundStyle(isFavorited ? .red : Color.secondaryText)
-                        .symbolEffect(.bounce, value: isFavorited)
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-                .accessibilityLabel(isFavorited ? "Remove from favorites" : "Add to favorites")
+                )
+                .padding(.top, AppTheme.sectionGap)
 
-                // Share button
-                Button {
-                    shareTriggered.toggle()
-                    showShareSheet = true
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.title2)
-                        .foregroundStyle(Color.secondaryText)
-                }
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-                .accessibilityLabel("Share verse")
+                // MARK: - Bottom Hint
+                bottomHintView
             }
-            .padding(.bottom, AppTheme.sectionGap)
-
-            // Refreshes tomorrow note
-            Text("Refreshes each day with a new verse")
-                .font(.caption)
-                .foregroundStyle(Color.secondaryText.opacity(0.7))
-                .padding(.bottom, AppTheme.screenMargin)
+        }
+        .refreshable {
+            isRefreshing = true
+            await viewModel.refresh()
+            if let verse = viewModel.verse {
+                await VerseCacheService.shared.cacheDailyVerse(verse)
+            }
+            isRefreshing = false
         }
         .shareSheet(isPresented: $showShareSheet, items: shareItems(for: verse))
+    }
+    
+    // MARK: - Subviews
+    
+    private var headerView: some View {
+        VStack(spacing: 4) {
+            Text("Verse of the Day")
+                .font(AppTheme.heading)
+                .foregroundStyle(Color.primaryText)
+                .accessibilityAddTraits(.isHeader)
+
+            Text(formattedDate)
+                .font(.subheadline)
+                .foregroundStyle(Color.secondaryText)
+        }
+        .padding(.top, AppTheme.sectionGap)
+        .padding(.bottom, AppTheme.screenMargin)
+    }
+    
+    private var bottomHintView: some View {
+        VStack(spacing: 4) {
+            Text("Pull down to refresh")
+                .font(.caption)
+                .foregroundStyle(Color.secondaryText.opacity(0.6))
+            
+            Text("Refreshes each day with a new verse")
+                .font(.caption2)
+                .foregroundStyle(Color.secondaryText.opacity(0.5))
+        }
+        .padding(.bottom, AppTheme.screenMargin)
+        .accessibilityHidden(true)
     }
 
     // MARK: - Share Items
@@ -161,18 +196,6 @@ struct DailyVerseView: View {
             items.append(image)
         }
         return items
-    }
-
-    // MARK: - Background (adapts to color scheme)
-
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [Color(hex: "#1C1C1E"), Color(.systemBackground)]
-                : [Color.cardBackground.opacity(0.5), Color(.systemBackground)],
-            startPoint: .top,
-            endPoint: .bottom
-        )
     }
 }
 
