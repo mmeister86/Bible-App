@@ -7,11 +7,33 @@ import SwiftUI
 
 /// A skeleton loading view that mimics the VerseCardView layout
 /// with shimmer animation for a polished loading experience.
+/// Respects Reduce Motion accessibility setting.
 struct VerseSkeletonView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isAnimating = false
     
     var body: some View {
+        skeletonContent
+            .padding(AppTheme.cardPadding)
+            .background(Color.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.cardRadius, style: .continuous))
+            .shadow(
+                color: AppTheme.cardShadowColor,
+                radius: AppTheme.cardShadowRadius,
+                x: 0,
+                y: AppTheme.cardShadowY
+            )
+            // Apply shimmer only if Reduce Motion is not enabled
+            .modifier(ConditionalShimmerModifier(shouldApply: !reduceMotion, isAnimating: isAnimating))
+            .onAppear {
+                isAnimating = true
+            }
+            .accessibilityLabel("Loading verse")
+    }
+    
+    @ViewBuilder
+    private var skeletonContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             // MARK: - Decorative Opening Quote Skeleton
             RoundedRectangle(cornerRadius: 4)
@@ -56,41 +78,64 @@ struct VerseSkeletonView: View {
                     .frame(width: 100, height: 24)
             }
         }
-        .padding(AppTheme.cardPadding)
-        .background(Color.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cardRadius, style: .continuous))
-        .shadow(
-            color: AppTheme.cardShadowColor,
-            radius: AppTheme.cardShadowRadius,
-            x: 0,
-            y: AppTheme.cardShadowY
-        )
-        .shimmer(isAnimating: isAnimating)
-        .onAppear {
-            isAnimating = true
-        }
     }
     
     private var skeletonColor: Color {
         colorScheme == .dark
-            ? Color.white.opacity(isAnimating ? 0.15 : 0.08)
-            : Color.black.opacity(isAnimating ? 0.08 : 0.04)
+            ? Color.white.opacity(0.1)
+            : Color.black.opacity(0.06)
     }
 }
 
-// MARK: - Shimmer Modifier
+// MARK: - Conditional Shimmer Modifier
+
+/// A view modifier that conditionally applies shimmer based on a flag
+struct ConditionalShimmerModifier: ViewModifier {
+    let shouldApply: Bool
+    let isAnimating: Bool
+    
+    func body(content: Content) -> some View {
+        if shouldApply {
+            content
+                .overlay(
+                    GeometryReader { geometry in
+                        LinearGradient(
+                            colors: [
+                                .clear,
+                                Color.white.opacity(0.3),
+                                .clear
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: geometry.size.width / 3)
+                        .offset(x: isAnimating ? geometry.size.width : -geometry.size.width / 3)
+                        .animation(
+                            .linear(duration: 1.5)
+                            .repeatForever(autoreverses: false),
+                            value: isAnimating
+                        )
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: AppTheme.cardRadius, style: .continuous))
+        } else {
+            content
+        }
+    }
+}
+
+// MARK: - Shimmer Modifier (for direct use)
 
 extension View {
     /// Applies a shimmer effect to the view
     func shimmer(isAnimating: Bool) -> some View {
-        modifier(ShimmerModifier(isAnimating: isAnimating))
+        self.modifier(ShimmerModifier(isAnimating: isAnimating))
     }
 }
 
 /// A view modifier that adds a shimmer animation effect
 struct ShimmerModifier: ViewModifier {
     let isAnimating: Bool
-    @State private var phase: CGFloat = 0
     
     func body(content: Content) -> some View {
         content
@@ -120,7 +165,7 @@ struct ShimmerModifier: ViewModifier {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Skeleton - Light Mode") {
     ZStack {
         Color(.systemBackground)
             .ignoresSafeArea()
@@ -128,4 +173,15 @@ struct ShimmerModifier: ViewModifier {
         VerseSkeletonView()
             .padding(AppTheme.screenMargin)
     }
+}
+
+#Preview("Skeleton - Dark Mode") {
+    ZStack {
+        Color(.systemBackground)
+            .ignoresSafeArea()
+        
+        VerseSkeletonView()
+            .padding(AppTheme.screenMargin)
+    }
+    .preferredColorScheme(.dark)
 }

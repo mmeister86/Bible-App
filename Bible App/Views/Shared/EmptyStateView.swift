@@ -7,6 +7,7 @@ import SwiftUI
 
 /// A reusable empty state view with icon, title, message, and optional action button.
 /// Follows Apple HIG guidelines for clarity and visual hierarchy.
+/// Respects Reduce Motion accessibility setting.
 struct EmptyStateView: View {
     let icon: String
     let title: String
@@ -15,6 +16,7 @@ struct EmptyStateView: View {
     var actionLabel: String?
     
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         VStack(spacing: 24) {
@@ -71,8 +73,13 @@ struct EmptyStateView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+            // Respect Reduce Motion setting
+            if reduceMotion {
                 appeared = true
+            } else {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+                    appeared = true
+                }
             }
         }
     }

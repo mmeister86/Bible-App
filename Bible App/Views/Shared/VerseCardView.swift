@@ -16,26 +16,12 @@ struct VerseCardView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     
     /// Calculated font size combining user preference with Dynamic Type
+    /// Uses Apple's recommended approach with scaled metrics
     private var fontSize: CGFloat {
-        let baseSize = userFontSize
-        // Scale with Dynamic Type (xSmall to accessibilityLarge)
-        let scale: CGFloat
-        switch dynamicTypeSize {
-        case .xSmall: scale = 0.8
-        case .small: scale = 0.85
-        case .medium: scale = 0.9
-        case .large: scale = 1.0
-        case .xLarge: scale = 1.1
-        case .xxLarge: scale = 1.2
-        case .xxxLarge: scale = 1.35
-        case .accessibility1: scale = 1.5
-        case .accessibility2: scale = 1.65
-        case .accessibility3: scale = 1.8
-        case .accessibility4: scale = 2.0
-        case .accessibility5: scale = 2.2
-        default: scale = 1.0
-        }
-        return baseSize * scale
+        // Use UIFontMetrics for proper scaling (Apple recommended approach)
+        let baseFont = UIFont.systemFont(ofSize: userFontSize, weight: .regular)
+        let scaledFont = UIFontMetrics.default.scaledFont(for: baseFont)
+        return scaledFont.pointSize
     }
 
     var body: some View {
@@ -55,6 +41,8 @@ struct VerseCardView: View {
                 .foregroundStyle(Color.primaryText)
                 .lineSpacing(fontSize * 0.4)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                // Ensure text wraps properly at large sizes
+                .fixedSize(horizontal: false, vertical: true)
 
             // Decorative closing quote (right-aligned)
             HStack {
@@ -158,7 +146,7 @@ struct VerseCardView: View {
     }
 }
 
-#Preview {
+#Preview("Default Size") {
     VStack(spacing: 20) {
         VerseCardView(
             response: BibleResponse(
@@ -178,39 +166,31 @@ struct VerseCardView: View {
                 translationNote: "Public Domain"
             )
         )
-        
+    }
+    .padding(AppTheme.screenMargin)
+}
+
+#Preview("Large Dynamic Type") {
+    VStack(spacing: 20) {
         VerseCardView(
             response: BibleResponse(
-                reference: "Psalm 23:1-3",
+                reference: "John 3:16",
                 verses: [
                     VerseEntry(
-                        bookId: "PSA",
-                        bookName: "Psalm",
-                        chapter: 23,
-                        verse: 1,
-                        text: "The LORD is my shepherd; I shall not want."
-                    ),
-                    VerseEntry(
-                        bookId: "PSA",
-                        bookName: "Psalm",
-                        chapter: 23,
-                        verse: 2,
-                        text: "He maketh me to lie down in green pastures: he leadeth me beside the still waters."
-                    ),
-                    VerseEntry(
-                        bookId: "PSA",
-                        bookName: "Psalm",
-                        chapter: 23,
-                        verse: 3,
-                        text: "He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake."
+                        bookId: "JHN",
+                        bookName: "John",
+                        chapter: 3,
+                        verse: 16,
+                        text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n"
                     )
                 ],
-                text: "The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters. He restoreth my soul.",
-                translationId: "kjv",
-                translationName: "King James Version",
+                text: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\n",
+                translationId: "web",
+                translationName: "World English Bible",
                 translationNote: "Public Domain"
             )
         )
     }
     .padding(AppTheme.screenMargin)
+    .environment(\.dynamicTypeSize, .accessibility3)
 }

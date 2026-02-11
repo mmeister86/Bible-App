@@ -13,7 +13,6 @@ struct ActionButtonView: View {
     let activeColor: Color
     let inactiveColor: Color
     let accessibilityLabel: String
-    let accessibilityHint: String?
     let action: () -> Void
     
     @State private var isPressed = false
@@ -24,7 +23,6 @@ struct ActionButtonView: View {
         activeColor: Color = .red,
         inactiveColor: Color = Color.secondaryText,
         accessibilityLabel: String,
-        accessibilityHint: String? = nil,
         action: @escaping () -> Void
     ) {
         self.icon = icon
@@ -32,7 +30,6 @@ struct ActionButtonView: View {
         self.activeColor = activeColor
         self.inactiveColor = inactiveColor
         self.accessibilityLabel = accessibilityLabel
-        self.accessibilityHint = accessibilityHint
         self.action = action
     }
     
@@ -44,7 +41,6 @@ struct ActionButtonView: View {
                     .fill(backgroundColor)
                     .frame(width: AppTheme.minTouchTarget, height: AppTheme.minTouchTarget)
                     .scaleEffect(isPressed ? 0.9 : 1.0)
-                    .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
                 
                 // Icon
                 Image(systemName: icon)
@@ -56,7 +52,6 @@ struct ActionButtonView: View {
         }
         .buttonStyle(PressableButtonStyle(isPressed: $isPressed))
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint(accessibilityHint ?? "")
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
     
@@ -90,6 +85,7 @@ struct PressableButtonStyle: ButtonStyle {
 
 extension ActionButtonView {
     /// Favorite button with heart icon
+    /// Note: No accessibility hint per Apple HIG - "Add to favorites" is self-explanatory
     static func favorite(
         isFavorited: Bool,
         action: @escaping () -> Void
@@ -99,20 +95,17 @@ extension ActionButtonView {
             isActive: isFavorited,
             activeColor: .red,
             accessibilityLabel: isFavorited ? "Remove from favorites" : "Add to favorites",
-            accessibilityHint: isFavorited
-                ? "Double-tap to remove this verse from your favorites"
-                : "Double-tap to save this verse to your favorites",
             action: action
         )
     }
     
     /// Share button
+    /// Note: No accessibility hint per Apple HIG - "Share verse" is self-explanatory
     static func share(action: @escaping () -> Void) -> ActionButtonView {
         ActionButtonView(
             icon: "square.and.arrow.up",
             inactiveColor: Color.secondaryText,
             accessibilityLabel: "Share verse",
-            accessibilityHint: "Double-tap to share this verse",
             action: action
         )
     }
@@ -125,7 +118,6 @@ extension ActionButtonView {
             activeColor: .red,
             inactiveColor: .red,
             accessibilityLabel: "Remove from favorites",
-            accessibilityHint: "Double-tap to remove this verse from your favorites",
             action: action
         )
     }
@@ -149,6 +141,8 @@ struct ActionButtonsContainer: View {
             ActionButtonView.share(action: onShare)
         }
         .padding(.vertical, 8)
+        // Combine into single accessibility element for cleaner VoiceOver experience
+        .accessibilityElement(children: .contain)
     }
 }
 
