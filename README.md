@@ -6,6 +6,8 @@ A beautifully crafted iOS app for reading, discovering, and saving Bible verses 
 
 **Daily Verse** — Start each day with an inspiring verse of the day, presented on an elegantly designed full-screen card with smooth spring animations.
 
+**Daily Notifications** — Get a daily reminder with an inspiring Bible verse. Choose your preferred time and translation in Settings.
+
 **Discover** — Browse Bible verses by mood or life situation. Choose from 10 curated categories like Comfort, Hope, Courage, and Gratitude — or tap Random Verse to discover something unexpected.
 
 **Search** — Look up any Bible reference (e.g. *John 3:16*, *Romans 8:28-30*) across multiple translations and see results with refined serif typography and inline verse numbers.
@@ -14,7 +16,7 @@ A beautifully crafted iOS app for reading, discovering, and saving Bible verses 
 
 **Share as Image** — Share any verse as a beautifully rendered 1080x1080 image card with gradient background, perfect for social media and messaging.
 
-**Settings** — Choose your preferred Bible translation, toggle light/dark/system appearance, adjust font size with a live preview, and show or hide verse numbers.
+**Settings** — Choose your preferred Bible translation, toggle light/dark/system appearance, adjust font size with a live preview, show or hide verse numbers, and configure daily notification reminders.
 
 ## Translations
 
