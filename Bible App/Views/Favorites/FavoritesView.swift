@@ -21,7 +21,7 @@ struct FavoritesView: View {
         NavigationStack {
             Group {
                 if favorites.isEmpty {
-                    emptyState
+                    EmptyStateView.favorites
                         .transition(.opacity)
                 } else {
                     favoritesList
@@ -53,25 +53,34 @@ struct FavoritesView: View {
                             deleteCount += 1
                         }
                         .contextMenu {
-                        Button(role: .destructive) {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                favoritesViewModel.removeFavorite(favorite, context: modelContext)
+                            Button(role: .destructive) {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    favoritesViewModel.removeFavorite(favorite, context: modelContext)
+                                }
+                                deleteCount += 1
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
-                            deleteCount += 1
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
 
-                        if let shareText = shareText(for: favorite) {
-                            ShareLink(item: shareText) {
-                                Label("Share", systemImage: "square.and.arrow.up")
+                            if let shareText = shareText(for: favorite) {
+                                ShareLink(item: shareText) {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                            }
+                            
+                            Button {
+                                UIPasteboard.general.string = favorite.text
+                            } label: {
+                                Label("Copy Text", systemImage: "doc.on.doc")
                             }
                         }
-                    }
-                    .transition(.asymmetric(
-                        insertion: .slide.combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
+                        .transition(.asymmetric(
+                            insertion: .slide.combined(with: .opacity),
+                            removal: .move(edge: .trailing).combined(with: .opacity)
+                        ))
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(favorite.reference), \(favorite.text)")
+                        .accessibilityHint("Double-tap to view details, swipe left to delete")
                 }
             }
             .padding(.horizontal, AppTheme.screenMargin)
@@ -88,41 +97,7 @@ struct FavoritesView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 20) {
-            // Decorative icon
-            ZStack {
-                Circle()
-                    .fill(Color.accentGold.opacity(0.1))
-                    .frame(width: 100, height: 100)
-
-                Image(systemName: "heart.text.square")
-                    .font(.system(size: 44))
-                    .foregroundStyle(Color.accentGold.opacity(0.6))
-            }
-            .accessibilityHidden(true)
-
-            Text("No favorites yet")
-                .font(AppTheme.heading)
-                .foregroundStyle(Color.primaryText)
-
-            Text("Tap the ♥ on any verse to save it here\nfor quick access later")
-                .font(.subheadline)
-                .foregroundStyle(Color.secondaryText)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-                .padding(.horizontal, AppTheme.sectionGap)
-
-            // Subtle hint
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.left")
-                    .font(.caption)
-                Text("Start from Today or Discover")
-                    .font(.caption)
-            }
-            .foregroundStyle(Color.secondaryText.opacity(0.6))
-            .padding(.top, 8)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyStateView.favorites
     }
 
     // MARK: - Helpers
@@ -170,14 +145,8 @@ private struct FavoriteDetailView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: colorScheme == .dark
-                    ? [Color(hex: "#1C1C1E"), Color(.systemBackground)]
-                    : [Color.cardBackground.opacity(0.5), Color(.systemBackground)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundGradient(for: colorScheme)
+                .ignoresSafeArea()
 
             VStack {
                 Spacer()
@@ -188,7 +157,7 @@ private struct FavoriteDetailView: View {
                         .scaleEffect(cardAppeared ? 1.0 : 0.95)
                         .opacity(cardAppeared ? 1.0 : 0.0)
                         .onAppear {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            withAnimation(AppTheme.cardAppearAnimation) {
                                 cardAppeared = true
                             }
                         }
@@ -198,32 +167,18 @@ private struct FavoriteDetailView: View {
 
                 // Action buttons
                 HStack(spacing: AppTheme.sectionGap) {
-                    Button(role: .destructive) {
+                    ActionButtonView.delete {
                         deleteTriggered.toggle()
                         withAnimation {
                             favoritesViewModel.removeFavorite(favorite, context: modelContext)
                         }
                         dismiss()
-                    } label: {
-                        Image(systemName: "heart.slash")
-                            .font(.title2)
-                            .foregroundStyle(.red)
                     }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel("Remove from favorites")
 
-                    Button {
+                    ActionButtonView.share {
                         shareTriggered.toggle()
                         showShareSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.title2)
-                            .foregroundStyle(Color.secondaryText)
                     }
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-                    .accessibilityLabel("Share verse")
                 }
                 .padding(.bottom, AppTheme.sectionGap)
             }

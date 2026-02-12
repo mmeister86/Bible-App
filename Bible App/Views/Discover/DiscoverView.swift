@@ -23,6 +23,7 @@ struct DiscoverView: View {
                         .foregroundStyle(Color.primaryText)
                         .padding(.top, AppTheme.sectionGap)
                         .frame(maxWidth: .infinity)
+                        .accessibilityAddTraits(.isHeader)
 
                     // MARK: - Random Verse Button
                     randomVerseButton
@@ -33,13 +34,14 @@ struct DiscoverView: View {
                         .font(.headline)
                         .foregroundStyle(Color.secondaryText)
                         .padding(.horizontal, AppTheme.screenMargin)
+                        .accessibilityAddTraits(.isHeader)
 
                     CategoryGridView()
                         .padding(.horizontal, AppTheme.screenMargin)
                         .padding(.bottom, AppTheme.sectionGap)
                 }
             }
-            .background(backgroundGradient.ignoresSafeArea())
+            .background(AppTheme.backgroundGradient(for: colorScheme).ignoresSafeArea())
             .navigationDestination(for: VerseCategory.self) { category in
                 CategoryVerseView(category: category)
             }
@@ -58,14 +60,15 @@ struct DiscoverView: View {
             showRandomVerse = true
         } label: {
             HStack(spacing: AppTheme.itemSpacing) {
-                Image(systemName: "shuffle")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .background(
-                        Circle()
-                            .fill(Color.accentGold)
-                    )
+                ZStack {
+                    Circle()
+                        .fill(Color.accentGold)
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: "shuffle")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Random Verse")
@@ -95,18 +98,8 @@ struct DiscoverView: View {
             )
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Background
-
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [Color(hex: "#1C1C1E"), Color(.systemBackground)]
-                : [Color.cardBackground.opacity(0.5), Color(.systemBackground)],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        .accessibilityLabel("Get a random Bible verse")
+        .accessibilityHint("Double-tap to discover a random verse")
     }
 }
 
