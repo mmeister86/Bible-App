@@ -5,12 +5,14 @@
 
 import SwiftUI
 import UIKit
+import os
 
 /// A non-interactive rendered version of a verse card designed for sharing.
 /// Uses `ImageRenderer` (iOS 16+) to produce a `UIImage` suitable for social media.
 /// Features decorative quotation marks and a refined visual design.
 struct VerseShareView: View {
     let response: BibleResponse
+    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "BibleApp", category: "VerseShare")
 
     var body: some View {
         ZStack {
@@ -96,8 +98,10 @@ struct VerseShareView: View {
         
         // Check cache first
         if let cached = imageCache.object(forKey: cacheKey) {
+            logger.debug("Share image cache hit for \(response.reference, privacy: .public)")
             return cached
         }
+        logger.debug("Share image cache miss for \(response.reference, privacy: .public); rendering fallback")
         
         // Render if not cached
         let view = VerseShareView(response: response)
@@ -107,8 +111,11 @@ struct VerseShareView: View {
         if let image = renderer.uiImage {
             // Store in cache
             imageCache.setObject(image, forKey: cacheKey)
+            logger.debug("Rendered and cached share image for \(response.reference, privacy: .public)")
             return image
         }
+
+        logger.error("Failed to render share image for \(response.reference, privacy: .public)")
         
         return nil
     }
@@ -128,6 +135,7 @@ struct VerseShareView: View {
         
         // Skip if already cached
         if imageCache.object(forKey: cacheKey) != nil {
+            logger.debug("Skipped pre-render; cache already populated for \(response.reference, privacy: .public)")
             return
         }
         
@@ -137,7 +145,11 @@ struct VerseShareView: View {
         
         if let image = renderer.uiImage {
             imageCache.setObject(image, forKey: cacheKey)
+            logger.debug("Pre-rendered share image for \(response.reference, privacy: .public)")
+            return
         }
+
+        logger.error("Pre-render failed for \(response.reference, privacy: .public)")
     }
 
     /// Clears the image cache (useful for memory warnings)

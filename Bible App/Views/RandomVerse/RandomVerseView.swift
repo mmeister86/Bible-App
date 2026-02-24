@@ -195,8 +195,7 @@ struct RandomVerseView: View {
         var items: [Any] = [
             "\(verse.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(verse.reference)"
         ]
-        // Use cached image for performance
-        if let image = VerseShareView.cachedImage(for: verse) {
+        if let image = VerseShareView.renderImage(for: verse) {
             items.append(image)
         }
         return items

@@ -42,12 +42,28 @@ struct DailyVerseService {
     static func getCachedDailyVerse() -> BibleResponse? {
         guard let defaults = sharedDefaults,
               let data = defaults.data(forKey: dailyVerseDataKey) else {
+            logger.debug("No cached daily verse data found")
             return nil
         }
 
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try? decoder.decode(BibleResponse.self, from: data)
+        do {
+            return try decoder.decode(BibleResponse.self, from: data)
+        } catch {
+            logger.error("Failed to decode cached daily verse as BibleResponse: \(error.localizedDescription, privacy: .public)")
+
+            if let jsonObject = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let keys = jsonObject.keys.sorted().joined(separator: ",")
+                let hasTranslationId = jsonObject["translation_id"] != nil || jsonObject["translationId"] != nil
+                let hasTranslationNote = jsonObject["translation_note"] != nil || jsonObject["translationNote"] != nil
+                logger.error(
+                    "Cached payload keys=\(keys, privacy: .public) hasTranslationId=\(hasTranslationId, privacy: .public) hasTranslationNote=\(hasTranslationNote, privacy: .public)"
+                )
+            }
+
+            return nil
+        }
     }
 
     /// Cache the given response as today's daily verse

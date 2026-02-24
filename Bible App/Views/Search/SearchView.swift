@@ -315,7 +315,7 @@ private struct SearchResultContentView: View {
         var items: [Any] = [
             "\(result.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(result.reference)"
         ]
-        if let image = VerseShareView.cachedImage(for: result) {
+        if let image = VerseShareView.renderImage(for: result) {
             items.append(image)
         }
         return items

@@ -278,7 +278,7 @@ struct CategoryVerseView: View {
         var items: [Any] = [
             "\(verse.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(verse.reference)"
         ]
-        if let image = VerseShareView.cachedImage(for: verse) {
+        if let image = VerseShareView.renderImage(for: verse) {
             items.append(image)
         }
         return items

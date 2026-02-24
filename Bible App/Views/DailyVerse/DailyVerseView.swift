@@ -113,6 +113,9 @@ struct DailyVerseView: View {
                         withAnimation(AppTheme.cardAppearAnimation) {
                             cardAppeared = true
                         }
+                        Task { @MainActor in
+                            VerseShareView.preRender(for: verse)
+                        }
                     }
 
                 // MARK: - Action Buttons
@@ -184,7 +187,7 @@ struct DailyVerseView: View {
         var items: [Any] = [
             "\(verse.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(verse.reference)"
         ]
-        if let image = VerseShareView.cachedImage(for: verse) {
+        if let image = VerseShareView.renderImage(for: verse) {
             items.append(image)
         }
         return items

@@ -283,8 +283,18 @@ struct DailyVerseWidgetService {
         let payload = WidgetBibleResponse(
             reference: reference,
             text: text,
+            translationId: translationId,
             translationName: translationName,
-            verses: [WidgetVerseEntry(bookName: bookName, chapter: chapter, verse: verse)]
+            translationNote: "",
+            verses: [
+                WidgetVerseEntry(
+                    bookId: "",
+                    bookName: bookName,
+                    chapter: chapter,
+                    verse: verse,
+                    text: text
+                )
+            ]
         )
 
         guard let data = try? JSONEncoder().encode(payload) else {
@@ -298,6 +308,9 @@ struct DailyVerseWidgetService {
         defaults.set(formatter.string(from: Date()), forKey: verseDateKey)
         defaults.set(translationId, forKey: verseTranslationKey)
         defaults.set(reference, forKey: verseReferenceKey)
+        logger.debug(
+            "cacheVerseForToday wrote widget payload for \(reference, privacy: .public) translationId=\(translationId, privacy: .public)"
+        )
     }
 
     private func isDailyVerseFresh() -> Bool {
@@ -317,12 +330,30 @@ struct DailyVerseWidgetService {
 private struct WidgetBibleResponse: Codable {
     let reference: String
     let text: String
+    let translationId: String?
     let translationName: String?
+    let translationNote: String?
     let verses: [WidgetVerseEntry]
 }
 
 private struct WidgetVerseEntry: Codable {
+    let bookId: String?
     let bookName: String
     let chapter: Int
     let verse: Int
+    let text: String?
+
+    init(
+        bookId: String? = nil,
+        bookName: String,
+        chapter: Int,
+        verse: Int,
+        text: String? = nil
+    ) {
+        self.bookId = bookId
+        self.bookName = bookName
+        self.chapter = chapter
+        self.verse = verse
+        self.text = text
+    }
 }
