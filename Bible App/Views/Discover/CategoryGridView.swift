@@ -46,7 +46,7 @@ private struct CategoryTileView: View {
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: category.icon)
-                .font(.title2)
+                .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
                 .background(
@@ -67,6 +67,7 @@ private struct CategoryTileView: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .frame(height: AppTheme.categoryTileHeight)
         .padding(.vertical, 16)
         .padding(.horizontal, 12)
         .background(

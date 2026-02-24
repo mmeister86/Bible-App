@@ -20,7 +20,7 @@ extension VerseCategory {
         VerseCategory(
             id: "comfort",
             name: "Comfort",
-            icon: "heart.circle.fill",
+            icon: "heart.fill",
             description: "When you need reassurance",
             accentColorHex: "#E88D67",
             verseReferences: [
@@ -191,7 +191,7 @@ extension VerseCategory {
         VerseCategory(
             id: "forgiveness",
             name: "Forgiveness",
-            icon: "arrow.uturn.backward.circle.fill",
+            icon: "arrow.uturn.backward",
             description: "Grace and new beginnings",
             accentColorHex: "#9B8EC7",
             verseReferences: [

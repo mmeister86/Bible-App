@@ -39,6 +39,7 @@ enum AppTheme {
 
     static let cardPadding: CGFloat = 24
     static let cardRadius: CGFloat = 20
+    static let categoryTileHeight: CGFloat = 170
     static let screenMargin: CGFloat = 20
     static let itemSpacing: CGFloat = 12
     static let sectionGap: CGFloat = 32
