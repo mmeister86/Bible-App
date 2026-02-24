@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import Network
 
 /// A service for caching Bible verses locally for offline access.
 /// Uses UserDefaults for persistence with automatic expiration.
@@ -29,6 +30,13 @@ actor VerseCacheService {
     
     /// Cache expiration time in hours
     private let cacheExpirationHours: Double = 24
+    
+    /// Reusable DateFormatter for cache keys - thread-safe when used as static
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
     
     // MARK: - Initialization
     
@@ -149,9 +157,7 @@ actor VerseCacheService {
     }
     
     private func dailyVerseCacheKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return "daily_\(formatter.string(from: date))"
+        "daily_\(Self.dateFormatter.string(from: date))"
     }
     
     private func endOfToday() -> Date {
@@ -161,31 +167,54 @@ actor VerseCacheService {
 
 // MARK: - Network Status Monitor
 
-/// Monitors network connectivity status
+/// Monitors network connectivity status using Apple's recommended NWPathMonitor API
 @Observable
 final class NetworkMonitor {
     static let shared = NetworkMonitor()
     
     private(set) var isConnected = true
+    private(set) var connectionType: ConnectionType = .unknown
+    
+    private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "com.bibleapp.networkMonitor")
     
-    private init() {
-        // Simple connectivity check - could be enhanced with NWPathMonitor
-        checkConnection()
+    enum ConnectionType {
+        case wifi
+        case cellular
+        case ethernet
+        case unknown
     }
     
-    func checkConnection() {
-        // Check if we can reach a simple endpoint
-        guard let url = URL(string: "https://bible-api.com") else { return }
-        
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 5
-        request.httpMethod = "HEAD"
-        
-        URLSession.shared.dataTask(with: request) { [weak self] _, response, _ in
-            DispatchQueue.main.async {
-                self?.isConnected = (response as? HTTPURLResponse)?.statusCode == 200
+    private init() {
+        startMonitoring()
+    }
+    
+    deinit {
+        stopMonitoring()
+    }
+    
+    func startMonitoring() {
+        monitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor in
+                self?.isConnected = path.status == .satisfied
+                self?.connectionType = self?.getConnectionType(path) ?? .unknown
             }
-        }.resume()
+        }
+        monitor.start(queue: queue)
+    }
+    
+    func stopMonitoring() {
+        monitor.cancel()
+    }
+    
+    private func getConnectionType(_ path: NWPath) -> ConnectionType {
+        if path.usesInterfaceType(.wifi) {
+            return .wifi
+        } else if path.usesInterfaceType(.cellular) {
+            return .cellular
+        } else if path.usesInterfaceType(.wiredEthernet) {
+            return .ethernet
+        }
+        return .unknown
     }
 }

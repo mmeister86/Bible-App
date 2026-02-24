@@ -19,6 +19,8 @@ final class DailyVerseViewModel {
         errorMessage = nil
 
         let translation = UserDefaults.standard.string(forKey: "selectedTranslation") ?? "web"
+        UserDefaults(suiteName: "group.dev.matthiasmeister.Bible-App")?
+            .set(translation, forKey: "selectedTranslation")
 
         do {
             let response = try await DailyVerseService.fetchAndCacheDailyVerse(

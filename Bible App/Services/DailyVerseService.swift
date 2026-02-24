@@ -4,13 +4,25 @@
 //
 
 import Foundation
+import OSLog
 
 /// Manages daily verse selection with UserDefaults caching.
 /// Ensures one verse per calendar day — fetches a new random verse only when the cached date is stale.
 struct DailyVerseService {
 
-    private static let dailyVerseDataKey = "dailyVerseData"
-    private static let dailyVerseDateKey = "dailyVerseDate"
+    private static let appGroupID = "group.dev.matthiasmeister.Bible-App"
+    private static let dailyVerseDataKey = "shared.dailyVerseData"
+    private static let dailyVerseDateKey = "shared.dailyVerseDate"
+    private static let dailyVerseTranslationKey = "shared.dailyVerseTranslation"
+    private static let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "DailyVerseService")
+
+    private static var sharedDefaults: UserDefaults? {
+        let defaults = UserDefaults(suiteName: appGroupID)
+        if defaults == nil {
+            logger.error("App Group defaults unavailable for \(appGroupID, privacy: .public)")
+        }
+        return defaults
+    }
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -27,7 +39,8 @@ struct DailyVerseService {
 
     /// Returns the cached daily verse if one exists, or nil
     static func getCachedDailyVerse() -> BibleResponse? {
-        guard let data = UserDefaults.standard.data(forKey: dailyVerseDataKey) else {
+        guard let defaults = sharedDefaults,
+              let data = defaults.data(forKey: dailyVerseDataKey) else {
             return nil
         }
 
@@ -38,20 +51,29 @@ struct DailyVerseService {
 
     /// Cache the given response as today's daily verse
     static func cacheDailyVerse(_ response: BibleResponse) {
+        guard let defaults = sharedDefaults else {
+            return
+        }
+
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         if let data = try? encoder.encode(response) {
-            UserDefaults.standard.set(data, forKey: dailyVerseDataKey)
-            UserDefaults.standard.set(todayString, forKey: dailyVerseDateKey)
+            defaults.set(data, forKey: dailyVerseDataKey)
+            defaults.set(todayString, forKey: dailyVerseDateKey)
+            defaults.set(response.translationId, forKey: dailyVerseTranslationKey)
         }
     }
 
-    /// Returns true if the cached verse date matches today
-    static func isDailyVerseFresh() -> Bool {
-        guard let cachedDate = UserDefaults.standard.string(forKey: dailyVerseDateKey) else {
+    /// Returns true if the cached verse date matches today AND uses the same translation
+    static func isDailyVerseFresh(for translation: String) -> Bool {
+        guard let defaults = sharedDefaults,
+              let cachedDate = defaults.string(forKey: dailyVerseDateKey) else {
             return false
         }
-        return cachedDate == todayString
+
+        let cachedTranslation = defaults.string(forKey: dailyVerseTranslationKey) ?? "web"
+        
+        return cachedDate == todayString && cachedTranslation == translation
     }
 
     /// Returns today's verse — from cache if fresh, otherwise fetches a new random verse and caches it
@@ -60,12 +82,27 @@ struct DailyVerseService {
     static func fetchAndCacheDailyVerse(
         translation: String = "web"
     ) async throws -> BibleResponse {
-        if isDailyVerseFresh(), let cached = getCachedDailyVerse() {
-            return cached
+        // Use the translation parameter - cache is only valid for the same translation
+        if isDailyVerseFresh(for: translation), let cached = getCachedDailyVerse() {
+            // Verify cached verse matches requested translation
+            if cached.translationId == translation {
+                return cached
+            }
         }
 
         let response = try await BibleAPIClient.fetchRandomVerse(translation: translation)
         cacheDailyVerse(response)
         return response
+    }
+    
+    /// Clears the cached daily verse to force a refresh
+    static func clearCache() {
+        guard let defaults = sharedDefaults else {
+            return
+        }
+
+        defaults.removeObject(forKey: dailyVerseDataKey)
+        defaults.removeObject(forKey: dailyVerseDateKey)
+        defaults.removeObject(forKey: dailyVerseTranslationKey)
     }
 }

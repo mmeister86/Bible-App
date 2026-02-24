@@ -58,19 +58,14 @@ struct DailyVerseView: View {
     // MARK: - Loading Logic
     
     private func loadVerse() async {
-        // Try to load cached verse first for instant display
-        if let cached = await VerseCacheService.shared.getCachedDailyVerse() {
+        // Load cached verse from DailyVerseService (App Group, shared with Widget)
+        if let cached = DailyVerseService.getCachedDailyVerse() {
             viewModel.verse = cached
             viewModel.isLoading = false
         }
         
-        // Then fetch fresh data
+        // Then fetch fresh data (DailyVerseService handles caching internally)
         await viewModel.loadDailyVerse()
-        
-        // Cache the result
-        if let verse = viewModel.verse {
-            await VerseCacheService.shared.cacheDailyVerse(verse)
-        }
     }
 
     // MARK: - Content
@@ -147,9 +142,6 @@ struct DailyVerseView: View {
         .refreshable {
             isRefreshing = true
             await viewModel.refresh()
-            if let verse = viewModel.verse {
-                await VerseCacheService.shared.cacheDailyVerse(verse)
-            }
             isRefreshing = false
         }
         .shareSheet(isPresented: $showShareSheet, items: shareItems(for: verse))
@@ -192,7 +184,7 @@ struct DailyVerseView: View {
         var items: [Any] = [
             "\(verse.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(verse.reference)"
         ]
-        if let image = VerseShareView.renderImage(for: verse) {
+        if let image = VerseShareView.cachedImage(for: verse) {
             items.append(image)
         }
         return items

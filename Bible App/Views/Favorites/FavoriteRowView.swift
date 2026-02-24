@@ -11,11 +11,16 @@ struct FavoriteRowView: View {
     let favorite: FavoriteVerse
 
     /// Formatted saved date (e.g. "Feb 7, 2026")
-    private var formattedDate: String {
+    /// Uses a static DateFormatter for performance - DateFormatter is expensive to create
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        return formatter.string(from: favorite.savedAt)
+        return formatter
+    }()
+
+    private var formattedDate: String {
+        Self.dateFormatter.string(from: favorite.savedAt)
     }
 
     var body: some View {

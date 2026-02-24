@@ -5,11 +5,14 @@
 
 import Foundation
 import SwiftData
+import WidgetKit
 
 /// Handles favorite verse mutations. Favorites data is fetched via @Query in the view;
 /// this ViewModel handles add, remove, and lookup operations only.
 @MainActor @Observable
 final class FavoritesViewModel {
+
+    private let verseOfDayWidgetKind = "VerseOfTheDayWidget"
 
     /// Create a FavoriteVerse from a BibleResponse and insert it into the model context.
     func addFavorite(from response: BibleResponse, context: ModelContext) {
@@ -23,11 +26,13 @@ final class FavoritesViewModel {
             translationName: response.translationName
         )
         context.insert(favorite)
+        syncWidgetsWithFavorites()
     }
 
     /// Remove a FavoriteVerse from the model context.
     func removeFavorite(_ favorite: FavoriteVerse, context: ModelContext) {
         context.delete(favorite)
+        syncWidgetsWithFavorites()
     }
 
     /// Check whether a given reference string already exists in the favorites array.
@@ -39,6 +44,7 @@ final class FavoritesViewModel {
     func removeFavorite(byReference reference: String, in favorites: [FavoriteVerse], context: ModelContext) {
         if let existing = favorites.first(where: { $0.reference == reference }) {
             context.delete(existing)
+            syncWidgetsWithFavorites()
         }
     }
 
@@ -49,5 +55,9 @@ final class FavoritesViewModel {
         } else {
             addFavorite(from: response, context: context)
         }
+    }
+
+    private func syncWidgetsWithFavorites() {
+        WidgetCenter.shared.reloadTimelines(ofKind: verseOfDayWidgetKind)
     }
 }

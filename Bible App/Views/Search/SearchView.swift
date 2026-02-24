@@ -272,6 +272,10 @@ private struct SearchResultContentView: View {
                         withAnimation(AppTheme.cardAppearAnimation) {
                             resultAppeared = true
                         }
+                        // Pre-render share image for performance
+                        Task { @MainActor in
+                            VerseShareView.preRender(for: result)
+                        }
                     }
 
                 ActionButtonsContainer(
@@ -311,7 +315,7 @@ private struct SearchResultContentView: View {
         var items: [Any] = [
             "\(result.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(result.reference)"
         ]
-        if let image = VerseShareView.renderImage(for: result) {
+        if let image = VerseShareView.cachedImage(for: result) {
             items.append(image)
         }
         return items

@@ -33,6 +33,11 @@ enum AppearanceMode: Int, CaseIterable {
 /// so they persist across launches and are readable via @AppStorage elsewhere.
 @MainActor @Observable
 final class SettingsViewModel {
+    private static let appGroupID = "group.dev.matthiasmeister.Bible-App"
+
+    private static var sharedDefaults: UserDefaults? {
+        UserDefaults(suiteName: appGroupID)
+    }
 
     // MARK: - Translation Model
 
@@ -55,7 +60,10 @@ final class SettingsViewModel {
     }
 
     var selectedTranslation: String {
-        didSet { UserDefaults.standard.set(selectedTranslation, forKey: "selectedTranslation") }
+        didSet {
+            UserDefaults.standard.set(selectedTranslation, forKey: "selectedTranslation")
+            Self.sharedDefaults?.set(selectedTranslation, forKey: "selectedTranslation")
+        }
     }
 
     var fontSize: Double {
@@ -146,6 +154,8 @@ final class SettingsViewModel {
         } else {
             self.reminderMinute = 0
         }
+
+        Self.sharedDefaults?.set(selectedTranslation, forKey: "selectedTranslation")
     }
 
     // MARK: - Actions

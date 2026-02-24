@@ -109,6 +109,10 @@ struct CategoryVerseView: View {
                             withAnimation(AppTheme.cardAppearAnimation) {
                                 cardAppeared = true
                             }
+                            // Pre-render share image for performance
+                            Task { @MainActor in
+                                VerseShareView.preRender(for: verse)
+                            }
                         }
                 }
             }
@@ -274,7 +278,7 @@ struct CategoryVerseView: View {
         var items: [Any] = [
             "\(verse.text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(verse.reference)"
         ]
-        if let image = VerseShareView.renderImage(for: verse) {
+        if let image = VerseShareView.cachedImage(for: verse) {
             items.append(image)
         }
         return items

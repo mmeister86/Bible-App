@@ -95,12 +95,10 @@ private struct SwipeToDeleteModifier: ViewModifier {
                 let fastSwipe = abs(predictedDx) > velocityThreshold && dx < 0
 
                 if pastThreshold || fastSwipe {
-                    // Animate row off-screen, then delete
+                    // Animate row off-screen, then delete using animation completion
                     withAnimation(.easeIn(duration: 0.2)) {
                         offset = -500
-                    }
-                    // Fire delete after the animation
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    } completion: {
                         onDelete()
                     }
                 } else {
