@@ -14,6 +14,7 @@ struct DailyVerseService {
     private static let dailyVerseDataKey = "shared.dailyVerseData"
     private static let dailyVerseDateKey = "shared.dailyVerseDate"
     private static let dailyVerseTranslationKey = "shared.dailyVerseTranslation"
+    private static let dailyVerseReferenceKey = "shared.dailyVerseReference"
     private static let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "DailyVerseService")
 
     private static var sharedDefaults: UserDefaults? {
@@ -61,7 +62,34 @@ struct DailyVerseService {
             defaults.set(data, forKey: dailyVerseDataKey)
             defaults.set(todayString, forKey: dailyVerseDateKey)
             defaults.set(response.translationId, forKey: dailyVerseTranslationKey)
+            defaults.set(response.reference, forKey: dailyVerseReferenceKey)
         }
+    }
+    
+    /// Returns the cached verse reference (e.g., "John 3:16") if one exists
+    static func getCachedVerseReference() -> String? {
+        sharedDefaults?.string(forKey: dailyVerseReferenceKey)
+    }
+    
+    /// Fetch the same verse in a different translation and update the cache
+    static func fetchAndCacheDailyVerseInNewTranslation(
+        newTranslation: String
+    ) async throws -> BibleResponse {
+        // Get the cached reference to fetch the same verse in new translation
+        guard let reference = getCachedVerseReference() else {
+            // No cached reference, fall back to random verse
+            logger.info("No cached reference found, fetching random verse for new translation")
+            return try await fetchAndCacheDailyVerse(translation: newTranslation)
+        }
+        
+        logger.info("Fetching same verse '\(reference, privacy: .public)' in new translation '\(newTranslation, privacy: .public)'")
+        
+        let response = try await BibleAPIClient.fetchVerse(
+            reference: reference,
+            translation: newTranslation
+        )
+        cacheDailyVerse(response)
+        return response
     }
 
     /// Returns true if the cached verse date matches today AND uses the same translation
@@ -104,5 +132,6 @@ struct DailyVerseService {
         defaults.removeObject(forKey: dailyVerseDataKey)
         defaults.removeObject(forKey: dailyVerseDateKey)
         defaults.removeObject(forKey: dailyVerseTranslationKey)
+        defaults.removeObject(forKey: dailyVerseReferenceKey)
     }
 }

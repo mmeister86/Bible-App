@@ -19,6 +19,7 @@ struct DailyVerseWidgetService {
     static let verseDataKey = "shared.dailyVerseData"
     static let verseDateKey = "shared.dailyVerseDate"
     static let verseTranslationKey = "shared.dailyVerseTranslation"
+    static let verseReferenceKey = "shared.dailyVerseReference"
     
     private let favoritesStore = WidgetFavoritesStore()
     private let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "WidgetDailyVerse")
@@ -55,6 +56,20 @@ struct DailyVerseWidgetService {
             if cachedTranslation == selectedTranslation {
                 logger.debug("Using fresh cached verse: \(cached.reference, privacy: .public) (translation: \(cachedTranslation, privacy: .public))")
                 return enrichWithFavoriteStatus(cached)
+            } else {
+                // Translation changed - fetch the SAME verse in new translation
+                logger.debug("Translation changed from \(cachedTranslation, privacy: .public) to \(selectedTranslation, privacy: .public)")
+                if let reference = sharedDefaults?.string(forKey: Self.verseReferenceKey) {
+                    do {
+                        let fetchedVerse = try await fetchSpecificVerseFromAPI(reference: reference)
+                        cache(verseData: fetchedVerse.rawData, translation: fetchedVerse.translationId)
+                        logger.debug("Fetched same verse '\(reference, privacy: .public)' in new translation: \(fetchedVerse.verse.reference, privacy: .public)")
+                        return enrichWithFavoriteStatus(fetchedVerse.verse)
+                    } catch {
+                        logger.error("Failed to fetch verse '\(reference, privacy: .public)' in new translation: \(error.localizedDescription, privacy: .public)")
+                        // Fall through to random verse fetch
+                    }
+                }
             }
         }
 
@@ -108,6 +123,39 @@ struct DailyVerseWidgetService {
     private func fetchVerseFromAPI() async throws -> (verse: DailyVerseWidgetData, translationId: String, rawData: Data) {
         let translation = selectedTranslation
         guard let url = URL(string: "https://bible-api.com/?random=verse&translation=\(translation)") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let apiResponse = try decoder.decode(WidgetBibleResponse.self, from: data)
+
+        return (
+            DailyVerseWidgetData(
+                reference: apiResponse.reference,
+                text: apiResponse.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                source: apiResponse.translationName,
+                bookName: apiResponse.verses.first?.bookName ?? parsedBookName(from: apiResponse.reference),
+                chapter: apiResponse.verses.first?.chapter ?? parsedChapter(from: apiResponse.reference),
+                verse: apiResponse.verses.first?.verse ?? parsedVerse(from: apiResponse.reference),
+                translationName: apiResponse.translationName ?? "",
+                isFavorited: false
+            ),
+            translation,
+            data
+        )
+    }
+    
+    /// Fetch a specific verse by reference in the current translation
+    private func fetchSpecificVerseFromAPI(reference: String) async throws -> (verse: DailyVerseWidgetData, translationId: String, rawData: Data) {
+        let translation = selectedTranslation
+        guard let encodedReference = reference.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let url = URL(string: "https://bible-api.com/\(encodedReference)?translation=\(translation)") else {
             throw URLError(.badURL)
         }
 
@@ -210,6 +258,13 @@ struct DailyVerseWidgetService {
         defaults.set(verseData, forKey: Self.verseDataKey)
         defaults.set(todayString(), forKey: Self.verseDateKey)
         defaults.set(translation, forKey: Self.verseTranslationKey)
+        
+        // Also cache the reference from the verse data
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        if let response = try? decoder.decode(WidgetBibleResponse.self, from: verseData) {
+            defaults.set(response.reference, forKey: Self.verseReferenceKey)
+        }
     }
 
     static func cacheVerseForToday(
@@ -242,6 +297,7 @@ struct DailyVerseWidgetService {
         defaults.set(data, forKey: verseDataKey)
         defaults.set(formatter.string(from: Date()), forKey: verseDateKey)
         defaults.set(translationId, forKey: verseTranslationKey)
+        defaults.set(reference, forKey: verseReferenceKey)
     }
 
     private func isDailyVerseFresh() -> Bool {

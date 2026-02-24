@@ -33,6 +33,36 @@ final class DailyVerseViewModel {
 
         isLoading = false
     }
+    
+    /// Load the same verse in a different translation (when user changes language)
+    func loadVerseInNewTranslation(newTranslation: String) async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        
+        // Update shared defaults for widget synchronization
+        UserDefaults(suiteName: "group.dev.matthiasmeister.Bible-App")?
+            .set(newTranslation, forKey: "selectedTranslation")
+
+        do {
+            let response = try await DailyVerseService.fetchAndCacheDailyVerseInNewTranslation(
+                newTranslation: newTranslation
+            )
+            verse = response
+        } catch {
+            // Fall back to loading fresh verse in new translation
+            do {
+                let response = try await DailyVerseService.fetchAndCacheDailyVerse(
+                    translation: newTranslation
+                )
+                verse = response
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+
+        isLoading = false
+    }
 
     /// Force-refresh by clearing cache and fetching anew.
     func refresh() async {
