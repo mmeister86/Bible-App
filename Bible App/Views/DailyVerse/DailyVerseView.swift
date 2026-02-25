@@ -252,7 +252,7 @@ struct DailyVerseView: View {
               let reference = verseData["reference"] as? String else {
             return []
         }
-        var items: [Any] = [
+        let items: [Any] = [
             "\(text.trimmingCharacters(in: .whitespacesAndNewlines))\n— \(reference)"
         ]
         return items

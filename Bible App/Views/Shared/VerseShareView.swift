@@ -158,7 +158,7 @@ struct VerseShareView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sizeThatFitsLayout) {
     VerseShareView(
         response: BibleResponse(
             reference: "John 3:16",
@@ -177,5 +177,4 @@ struct VerseShareView: View {
             translationNote: "Public Domain"
         )
     )
-    .previewLayout(.sizeThatFits)
 }

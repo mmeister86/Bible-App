@@ -12,7 +12,7 @@ import WidgetKit
 @MainActor @Observable
 final class FavoritesViewModel {
 
-    private let verseOfDayWidgetKind = "VerseOfTheDayWidget"
+    private let widgetKindsToReload = ["VerseOfTheDayWidget", "RandomVerseWidget"]
 
     /// Create a FavoriteVerse from a BibleResponse and insert it into the model context.
     func addFavorite(from response: BibleResponse, context: ModelContext) {
@@ -59,6 +59,8 @@ final class FavoritesViewModel {
 
     private func syncWidgetsWithFavorites(context: ModelContext) {
         try? context.save()
-        WidgetCenter.shared.reloadTimelines(ofKind: verseOfDayWidgetKind)
+        for kind in widgetKindsToReload {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
     }
 }

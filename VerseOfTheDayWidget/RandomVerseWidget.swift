@@ -2,26 +2,26 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
-struct DailyVerseEntry: TimelineEntry {
+struct RandomVerseEntry: TimelineEntry {
     let date: Date
-    let verse: DailyVerseWidgetData
+    let verse: RandomVerseWidgetData
 }
 
-struct DailyVerseTimelineProvider: TimelineProvider {
-    private let service = DailyVerseWidgetService()
+struct RandomVerseTimelineProvider: TimelineProvider {
+    private let service = RandomVerseWidgetService()
 
-    func placeholder(in context: Context) -> DailyVerseEntry {
-        DailyVerseEntry(date: Date(), verse: service.placeholderVerse())
+    func placeholder(in context: Context) -> RandomVerseEntry {
+        RandomVerseEntry(date: Date(), verse: service.placeholderVerse())
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (DailyVerseEntry) -> Void) {
-        completion(DailyVerseEntry(date: Date(), verse: service.placeholderVerse()))
+    func getSnapshot(in context: Context, completion: @escaping (RandomVerseEntry) -> Void) {
+        completion(RandomVerseEntry(date: Date(), verse: service.placeholderVerse()))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<DailyVerseEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<RandomVerseEntry>) -> Void) {
         Task {
-            let verse = await service.fetchDailyVerse()
-            let entry = DailyVerseEntry(date: Date(), verse: verse)
+            let verse = await service.fetchRandomVerse()
+            let entry = RandomVerseEntry(date: Date(), verse: verse)
             let timeline = Timeline(
                 entries: [entry],
                 policy: .after(service.nextRefreshDate())
@@ -31,8 +31,8 @@ struct DailyVerseTimelineProvider: TimelineProvider {
     }
 }
 
-struct DailyVerseWidgetView: View {
-    var entry: DailyVerseTimelineProvider.Entry
+struct RandomVerseWidgetView: View {
+    var entry: RandomVerseTimelineProvider.Entry
     @Environment(\.widgetFamily) private var family
     @Environment(\.colorScheme) private var colorScheme
 
@@ -43,7 +43,7 @@ struct DailyVerseWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Verse of the Day")
+            Text("Random Verse")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(widgetAccentGold)
 
@@ -117,7 +117,7 @@ struct DailyVerseWidgetView: View {
                 verse: entry.verse.verse,
                 translationName: entry.verse.translationName,
                 translationId: currentTranslationId,
-                sourceWidget: "dailyVerse"
+                sourceWidget: "randomVerse"
             )
         ) {
             Image(systemName: entry.verse.isFavorited ? "heart.fill" : "heart")
@@ -200,23 +200,15 @@ struct DailyVerseWidgetView: View {
     }
 }
 
-struct VerseOfTheDayWidget: Widget {
-    let kind: String = "VerseOfTheDayWidget"
+struct RandomVerseWidget: Widget {
+    let kind: String = "RandomVerseWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: DailyVerseTimelineProvider()) { entry in
-            DailyVerseWidgetView(entry: entry)
+        StaticConfiguration(kind: kind, provider: RandomVerseTimelineProvider()) { entry in
+            RandomVerseWidgetView(entry: entry)
         }
-        .configurationDisplayName("Verse of the Day")
-        .description("Shows today's Bible verse in English.")
+        .configurationDisplayName("Random Verse")
+        .description("Shows a random Bible verse.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
-    }
-}
-
-@main
-struct VerseWidgetsBundle: WidgetBundle {
-    var body: some Widget {
-        VerseOfTheDayWidget()
-        RandomVerseWidget()
     }
 }

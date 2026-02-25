@@ -80,6 +80,13 @@ final class SettingsViewModel {
     
     /// Fetch the same verse in a new translation and notify the widget
     private static let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "Settings")
+    private static let widgetKindsToReload = ["VerseOfTheDayWidget", "RandomVerseWidget"]
+
+    private static func reloadVerseWidgets() {
+        for kind in widgetKindsToReload {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
+    }
     
     private static func updateVerseForNewTranslation(newTranslation: String) async {
         do {
@@ -87,7 +94,7 @@ final class SettingsViewModel {
                 newTranslation: newTranslation
             )
             
-            WidgetCenter.shared.reloadTimelines(ofKind: "VerseOfTheDayWidget")
+            reloadVerseWidgets()
         } catch {
             logger.error("Failed to update verse for new translation: \(error.localizedDescription, privacy: .public)")
         }

@@ -29,6 +29,9 @@ struct ToggleFavoriteVerseIntent: AppIntent {
     @Parameter(title: "Translation ID")
     var translationId: String
 
+    @Parameter(title: "Source Widget")
+    var sourceWidget: String
+
     init() {}
 
     init(
@@ -38,7 +41,8 @@ struct ToggleFavoriteVerseIntent: AppIntent {
         chapter: Int,
         verse: Int,
         translationName: String,
-        translationId: String
+        translationId: String,
+        sourceWidget: String
     ) {
         self.reference = reference
         self.text = text
@@ -47,6 +51,7 @@ struct ToggleFavoriteVerseIntent: AppIntent {
         self.verse = verse
         self.translationName = translationName
         self.translationId = translationId
+        self.sourceWidget = sourceWidget
     }
 
     func perform() async throws -> some IntentResult {
@@ -60,23 +65,26 @@ struct ToggleFavoriteVerseIntent: AppIntent {
             translationName: translationName
         )
 
-        // Update the cached verse with current favorite status
-        // This ensures the widget shows the correct favorite state
-        DailyVerseWidgetService.cacheVerseForToday(
-            reference: reference,
-            text: text,
-            bookName: bookName,
-            chapter: chapter,
-            verse: verse,
-            translationName: translationName,
-            translationId: translationId
-        )
+        // Only update the daily verse cache when the toggle originates from the daily verse widget.
+        // This prevents the random verse from overwriting the verse of the day.
+        if sourceWidget == "dailyVerse" {
+            DailyVerseWidgetService.cacheVerseForToday(
+                reference: reference,
+                text: text,
+                bookName: bookName,
+                chapter: chapter,
+                verse: verse,
+                translationName: translationName,
+                translationId: translationId
+            )
+        }
 
         logger.debug(
-            "Toggled favorite for \(reference, privacy: .public). isNowFavorited=\(isNowFavorited, privacy: .public)"
+            "Toggled favorite for \(reference, privacy: .public). isNowFavorited=\(isNowFavorited, privacy: .public) source=\(sourceWidget, privacy: .public)"
         )
 
         WidgetCenter.shared.reloadTimelines(ofKind: "VerseOfTheDayWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: "RandomVerseWidget")
         return .result()
     }
 }
