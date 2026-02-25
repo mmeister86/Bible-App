@@ -18,10 +18,33 @@ struct Bible_AppTests {
 
 // MARK: - Notification Settings Tests
 
-struct NotificationSettingsTests {
+@Suite(.serialized) struct NotificationSettingsTests {
+
+    private static let appGroupDefaults = UserDefaults(suiteName: "group.dev.matthiasmeister.Bible-App")
+    private let defaults = UserDefaults.standard
+
+    init() {
+        Self.resetDefaults()
+    }
+
+    static func resetDefaults() {
+        let keys = [
+            "appearanceMode",
+            "selectedTranslation",
+            "fontSize",
+            "showVerseNumbers",
+            "notificationsEnabled",
+            "reminderHour",
+            "reminderMinute"
+        ]
+
+        for key in keys {
+            UserDefaults.standard.removeObject(forKey: key)
+            appGroupDefaults?.removeObject(forKey: key)
+        }
+    }
 
     @Test @MainActor func defaultReminderTimeIs8AM() {
-        let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "reminderHour")
         defaults.removeObject(forKey: "reminderMinute")
 
@@ -31,7 +54,6 @@ struct NotificationSettingsTests {
     }
 
     @Test @MainActor func notificationsDefaultToDisabled() {
-        let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "notificationsEnabled")
 
         let vm = SettingsViewModel()
@@ -92,5 +114,65 @@ struct NotificationSettingsTests {
 
         #expect(vm.reminderHour == 17)
         #expect(vm.reminderMinute == 45)
+    }
+
+    @Test @MainActor func fontSizeDefaultsTo20WhenUnset() {
+        defaults.removeObject(forKey: "fontSize")
+
+        let vm = SettingsViewModel()
+        #expect(vm.fontSize == 20.0)
+    }
+
+    @Test @MainActor func commitFontSizePersistsToUserDefaults() {
+        let vm = SettingsViewModel()
+
+        vm.commitFontSize(24.0)
+
+        #expect(vm.fontSize == 24.0)
+        #expect(defaults.double(forKey: "fontSize") == 24.0)
+    }
+
+    @Test @MainActor func showVerseNumbersDefaultsToTrueWhenUnset() {
+        defaults.removeObject(forKey: "showVerseNumbers")
+
+        let vm = SettingsViewModel()
+        #expect(vm.showVerseNumbers == true)
+    }
+
+    @Test @MainActor func showVerseNumbersPersistsToUserDefaults() {
+        let vm = SettingsViewModel()
+
+        vm.showVerseNumbers = false
+
+        #expect(defaults.bool(forKey: "showVerseNumbers") == false)
+    }
+
+    @Test @MainActor func appearanceModePersistsToUserDefaults() {
+        let vm = SettingsViewModel()
+
+        vm.appearanceMode = 2
+
+        #expect(defaults.integer(forKey: "appearanceMode") == 2)
+    }
+
+    @Test @MainActor func selectedTranslationUsesStoredValueOnInit() {
+        defaults.set("bbe", forKey: "selectedTranslation")
+
+        let vm = SettingsViewModel()
+
+        #expect(vm.selectedTranslation == "bbe")
+    }
+
+    @Test @MainActor func resetToDefaultsRestoresAppearanceAndReadingPreferences() {
+        let vm = SettingsViewModel()
+        vm.appearanceMode = 2
+        vm.fontSize = 28.0
+        vm.showVerseNumbers = false
+
+        vm.resetToDefaults()
+
+        #expect(vm.appearanceMode == 0)
+        #expect(vm.fontSize == 20.0)
+        #expect(vm.showVerseNumbers == true)
     }
 }
