@@ -8,15 +8,24 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import OSLog
 
 extension Notification.Name {
-    /// Posted when the user taps the daily verse notification.
     static let didTapDailyVerseNotification = Notification.Name("didTapDailyVerseNotification")
+    static let didTriggerShare = Notification.Name("didTriggerShare")
 }
 
-/// Handles notification presentation and user interaction with notifications.
+struct PendingShareData: Equatable {
+    let reference: String
+    let text: String
+    let bookName: String
+    let chapter: Int
+    let verse: Int
+    let translationName: String
+    let translationId: String
+}
+
 final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    /// Suppresses notification banners when the app is in the foreground.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
@@ -24,7 +33,6 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         return []
     }
 
-    /// Called when the user taps a delivered notification.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
@@ -41,13 +49,13 @@ struct Bible_AppApp: App {
     private static let favoritesStoreFilename = "Favorites.sqlite"
 
     @AppStorage("appearanceMode") private var appearanceMode: Int = 0
+    private let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "AppShareFlow")
 
     private let notificationDelegate = NotificationDelegate()
 
     init() {
         UNUserNotificationCenter.current().delegate = notificationDelegate
 
-        // Reschedule daily reminder if notifications were previously enabled
         let defaults = UserDefaults.standard
         if defaults.bool(forKey: "notificationsEnabled") {
             let hour = defaults.object(forKey: "reminderHour") != nil
@@ -80,18 +88,13 @@ struct Bible_AppApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            // First fallback: try in-memory only
             print("Warning: Could not create persistent ModelContainer, attempting in-memory fallback: \(error)")
             
             do {
                 let inMemoryConfig = ModelConfiguration(isStoredInMemoryOnly: true)
                 return try ModelContainer(for: schema, configurations: [inMemoryConfig])
             } catch {
-                // Second fallback: this should never happen, but we fail gracefully
                 print("CRITICAL: Could not create any ModelContainer: \(error)")
-                
-                // Return a minimal in-memory container - app may not persist favorites
-                // but should still function
                 fatalError("Unable to initialize data storage. Please reinstall the app.")
             }
         }
@@ -138,10 +141,64 @@ struct Bible_AppApp: App {
         }
     }
 
+    private func handleShareURL(_ url: URL) {
+        logger.debug("handleShareURL called with URL: \(url.absoluteString, privacy: .public)")
+        guard url.host == "share",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            logger.debug("URL is not share deep link")
+            return
+        }
+
+        let params = Dictionary(uniqueKeysWithValues: queryItems.compactMap { item -> (String, String)? in
+            guard let value = item.value else { return nil }
+            return (item.name, value)
+        })
+
+        guard let reference = params["reference"],
+              let text = params["text"],
+              let bookName = params["bookName"],
+              let chapterStr = params["chapter"],
+              let chapter = Int(chapterStr),
+              let verseStr = params["verse"],
+              let verse = Int(verseStr),
+              let translationName = params["translationName"],
+              let translationId = params["translationId"] else {
+            logger.debug("Share deep link missing required params")
+            return
+        }
+
+        let pendingShareData = PendingShareData(
+            reference: reference,
+            text: text,
+            bookName: bookName,
+            chapter: chapter,
+            verse: verse,
+            translationName: translationName,
+            translationId: translationId
+        )
+
+        let defaults = UserDefaults(suiteName: "group.dev.matthiasmeister.Bible-App")
+        defaults?.set([
+            "reference": reference,
+            "text": text,
+            "bookName": bookName,
+            "chapter": chapter,
+            "verse": verse,
+            "translationName": translationName,
+            "translationId": translationId
+        ], forKey: "pendingShareVerse")
+        logger.debug("Share data posted from deep link and mirrored to defaults")
+        NotificationCenter.default.post(name: .didTriggerShare, object: pendingShareData)
+    }
+
     var body: some Scene {
         WindowGroup {
             MainTabView()
                 .preferredColorScheme(preferredColorScheme)
+                .onOpenURL { url in
+                    handleShareURL(url)
+                }
         }
         .modelContainer(sharedModelContainer)
     }

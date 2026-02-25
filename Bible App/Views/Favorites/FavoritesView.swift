@@ -13,35 +13,35 @@ struct FavoritesView: View {
     private var favorites: [FavoriteVerse]
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @State private var favoritesViewModel = FavoritesViewModel()
     @State private var selectedFavorite: FavoriteVerse?
     @State private var deleteCount = 0
 
     var body: some View {
         NavigationStack {
-            Group {
-                if favorites.isEmpty {
-                    emptyState
-                        .transition(.opacity)
-                } else {
-                    favoritesList
-                        .transition(.opacity)
+            ZStack {
+                AppTheme.backgroundGradient(for: colorScheme)
+                    .ignoresSafeArea()
+
+                Group {
+                    if favorites.isEmpty {
+                        emptyState
+                            .transition(.opacity)
+                    } else {
+                        favoritesList
+                            .transition(.opacity)
+                    }
                 }
+                .animation(.easeInOut(duration: 0.3), value: favorites.isEmpty)
             }
-            .animation(.easeInOut(duration: 0.3), value: favorites.isEmpty)
         }
         // Haptic feedback on delete
         .sensoryFeedback(.impact(weight: .light), trigger: deleteCount)
     }
 
     private var headerView: some View {
-        Text("Favorites")
-            .font(AppTheme.heading)
-            .foregroundStyle(Color.primaryText)
-            .padding(.top, AppTheme.sectionGap)
-            .padding(.bottom, AppTheme.screenMargin)
-            .frame(maxWidth: .infinity)
-            .accessibilityAddTraits(.isHeader)
+        TabHeaderView(title: "Favorites")
     }
 
     // MARK: - Favorites List

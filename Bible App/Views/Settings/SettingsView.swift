@@ -13,40 +13,39 @@ struct SettingsView: View {
     @State private var resetTriggered = false
     @State private var showResetConfirmation = false
     @State private var sliderFontSize: Double = 20.0
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    headerView
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
+            ZStack {
+                AppTheme.backgroundGradient(for: colorScheme)
+                    .ignoresSafeArea()
 
-                translationSection
-                appearanceSection
-                readingSection
-                displaySection
-                notificationSection
-                aboutSection
-                resetSection
-            }
-            .onAppear {
-                sliderFontSize = viewModel.fontSize
+                VStack(spacing: 0) {
+                    headerView
+
+                    Form {
+                        translationSection
+                        appearanceSection
+                        readingSection
+                        displaySection
+                        notificationSection
+                        aboutSection
+                        resetSection
+                    }
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .onAppear {
+                        sliderFontSize = viewModel.fontSize
+                    }
+                }
             }
         }
         .sensoryFeedback(.warning, trigger: resetTriggered)
     }
 
     private var headerView: some View {
-        Text("Settings")
-            .font(AppTheme.heading)
-            .foregroundStyle(Color.primaryText)
-            .padding(.top, AppTheme.sectionGap)
-            .padding(.bottom, AppTheme.screenMargin)
-            .frame(maxWidth: .infinity)
-            .accessibilityAddTraits(.isHeader)
+        TabHeaderView(title: "Settings")
     }
 
     // MARK: - Translation

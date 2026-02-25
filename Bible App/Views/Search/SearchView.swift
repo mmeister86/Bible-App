@@ -19,6 +19,7 @@ struct SearchView: View {
     @FocusState private var isSearchFieldFocused: Bool
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query private var favorites: [FavoriteVerse]
 
     /// Suggested verses for the "Try these" section
@@ -33,12 +34,17 @@ struct SearchView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
         NavigationStack {
-            content
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        isSearchFieldFocused = false
-                    }
-                )
+            ZStack {
+                AppTheme.backgroundGradient(for: colorScheme)
+                    .ignoresSafeArea()
+
+                content
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            isSearchFieldFocused = false
+                        }
+                    )
+            }
             .safeAreaInset(edge: .bottom) {
                 bottomSearchBar(searchText: $viewModel.searchText)
             }
@@ -49,13 +55,7 @@ struct SearchView: View {
     }
 
     private var headerView: some View {
-        Text("Search")
-            .font(AppTheme.heading)
-            .foregroundStyle(Color.primaryText)
-            .padding(.top, AppTheme.sectionGap)
-            .padding(.bottom, AppTheme.screenMargin)
-            .frame(maxWidth: .infinity)
-            .accessibilityAddTraits(.isHeader)
+        TabHeaderView(title: "Search")
     }
 
     private func bottomSearchBar(searchText: Binding<String>) -> some View {
@@ -145,9 +145,10 @@ struct SearchView: View {
             ScrollView {
                 VStack(spacing: AppTheme.screenMargin) {
                     headerView
+
                     errorState(errorMessage)
+                        .padding(.horizontal, AppTheme.screenMargin)
                 }
-                .padding(.horizontal, AppTheme.screenMargin)
             }
             .scrollDismissesKeyboard(.immediately)
                 .transition(.opacity)
@@ -288,7 +289,8 @@ struct SearchView: View {
                 .padding(.top, AppTheme.screenMargin)
                 .accessibilityElement(children: .combine)
             }
-            .padding(AppTheme.screenMargin)
+            .padding(.horizontal, AppTheme.screenMargin)
+            .padding(.bottom, AppTheme.screenMargin)
         }
         .scrollDismissesKeyboard(.immediately)
     }
@@ -331,13 +333,7 @@ private struct SearchResultContentView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AppTheme.screenMargin) {
-                Text("Search")
-                    .font(AppTheme.heading)
-                    .foregroundStyle(Color.primaryText)
-                    .padding(.top, AppTheme.sectionGap)
-                    .padding(.bottom, AppTheme.screenMargin)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityAddTraits(.isHeader)
+                TabHeaderView(title: "Search")
 
                 VerseCardView(response: result)
                     .scaleEffect(resultAppeared ? 1.0 : 0.95)
@@ -380,7 +376,8 @@ private struct SearchResultContentView: View {
                 .frame(minWidth: AppTheme.minTouchTarget, minHeight: AppTheme.minTouchTarget)
                 .accessibilityLabel("Clear search and search for another verse")
             }
-            .padding(AppTheme.screenMargin)
+            .padding(.horizontal, AppTheme.screenMargin)
+            .padding(.bottom, AppTheme.screenMargin)
         }
         .scrollDismissesKeyboard(.immediately)
         .shareSheet(isPresented: $showShareSheet, items: shareItems(for: result))
