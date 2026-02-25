@@ -17,6 +17,13 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    headerView
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
+
                 translationSection
                 appearanceSection
                 readingSection
@@ -25,12 +32,21 @@ struct SettingsView: View {
                 aboutSection
                 resetSection
             }
-            .navigationTitle("Settings")
             .onAppear {
                 sliderFontSize = viewModel.fontSize
             }
         }
         .sensoryFeedback(.warning, trigger: resetTriggered)
+    }
+
+    private var headerView: some View {
+        Text("Settings")
+            .font(AppTheme.heading)
+            .foregroundStyle(Color.primaryText)
+            .padding(.top, AppTheme.sectionGap)
+            .padding(.bottom, AppTheme.screenMargin)
+            .frame(maxWidth: .infinity)
+            .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: - Translation

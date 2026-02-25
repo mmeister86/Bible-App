@@ -1,12 +1,13 @@
 //
 //  FavoriteVerse.swift
-//  Bible App
+//  Shared
 //
 
 import Foundation
 import SwiftData
 
-/// SwiftData model for locally persisted favorite verses
+/// SwiftData model for locally persisted favorite verses.
+/// Compiled into both the main app and widget extension.
 @Model
 final class FavoriteVerse {
     var id: UUID

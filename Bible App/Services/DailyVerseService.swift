@@ -79,6 +79,9 @@ struct DailyVerseService {
             defaults.set(todayString, forKey: dailyVerseDateKey)
             defaults.set(response.translationId, forKey: dailyVerseTranslationKey)
             defaults.set(response.reference, forKey: dailyVerseReferenceKey)
+            logger.debug(
+                "Cached shared daily verse reference=\(response.reference, privacy: .public) translation=\(response.translationId, privacy: .public)"
+            )
         }
     }
     
@@ -130,6 +133,9 @@ struct DailyVerseService {
         if isDailyVerseFresh(for: translation), let cached = getCachedDailyVerse() {
             // Verify cached verse matches requested translation
             if cached.translationId == translation {
+                logger.debug(
+                    "Returning shared cached daily verse reference=\(cached.reference, privacy: .public) translation=\(translation, privacy: .public)"
+                )
                 return cached
             }
         }

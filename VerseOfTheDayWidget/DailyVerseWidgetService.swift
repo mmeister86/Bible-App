@@ -23,7 +23,7 @@ struct DailyVerseWidgetService {
     
     private let favoritesStore = WidgetFavoritesStore()
     private let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "WidgetDailyVerse")
-    private static let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "WidgetDailyVerse")
+    private static let staticLogger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "WidgetDailyVerse")
 
     private var sharedDefaults: UserDefaults? {
         let defaults = UserDefaults(suiteName: Self.appGroupID)
@@ -122,7 +122,14 @@ struct DailyVerseWidgetService {
 
     private func fetchVerseFromAPI() async throws -> (verse: DailyVerseWidgetData, translationId: String, rawData: Data) {
         let translation = selectedTranslation
-        guard let url = URL(string: "https://bible-api.com/?random=verse&translation=\(translation)") else {
+        
+        var components = URLComponents(string: "https://bible-api.com")
+        components?.queryItems = [
+            URLQueryItem(name: "random", value: "verse"),
+            URLQueryItem(name: "translation", value: translation)
+        ]
+        
+        guard let url = components?.url else {
             throw URLError(.badURL)
         }
 
@@ -154,8 +161,14 @@ struct DailyVerseWidgetService {
     /// Fetch a specific verse by reference in the current translation
     private func fetchSpecificVerseFromAPI(reference: String) async throws -> (verse: DailyVerseWidgetData, translationId: String, rawData: Data) {
         let translation = selectedTranslation
-        guard let encodedReference = reference.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let url = URL(string: "https://bible-api.com/\(encodedReference)?translation=\(translation)") else {
+        
+        var components = URLComponents(string: "https://bible-api.com")
+        components?.path = "/\(reference.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? reference)"
+        components?.queryItems = [
+            URLQueryItem(name: "translation", value: translation)
+        ]
+        
+        guard let url = components?.url else {
             throw URLError(.badURL)
         }
 
@@ -277,7 +290,7 @@ struct DailyVerseWidgetService {
         translationId: String
     ) {
         guard let defaults = UserDefaults(suiteName: appGroupID) else {
-            logger.error("App Group defaults unavailable for \(appGroupID, privacy: .public)")
+            staticLogger.error("App Group defaults unavailable for \(appGroupID, privacy: .public)")
             return
         }
         let payload = WidgetBibleResponse(
@@ -308,7 +321,7 @@ struct DailyVerseWidgetService {
         defaults.set(formatter.string(from: Date()), forKey: verseDateKey)
         defaults.set(translationId, forKey: verseTranslationKey)
         defaults.set(reference, forKey: verseReferenceKey)
-        logger.debug(
+        staticLogger.debug(
             "cacheVerseForToday wrote widget payload for \(reference, privacy: .public) translationId=\(translationId, privacy: .public)"
         )
     }

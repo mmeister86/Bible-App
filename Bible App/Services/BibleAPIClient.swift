@@ -49,15 +49,13 @@ struct BibleAPIClient {
         reference: String,
         translation: String = "web"
     ) async throws -> BibleResponse {
-        guard let encodedReference = reference.addingPercentEncoding(
-            withAllowedCharacters: .urlPathAllowed
-        ) else {
-            throw BibleAPIError.invalidURL
-        }
+        var components = URLComponents(string: baseURL)
+        components?.path = "/\(reference)"
+        components?.queryItems = [
+            URLQueryItem(name: "translation", value: translation)
+        ]
 
-        let urlString = "\(baseURL)/\(encodedReference)?translation=\(translation)"
-
-        guard let url = URL(string: urlString) else {
+        guard let url = components?.url else {
             throw BibleAPIError.invalidURL
         }
 
@@ -70,9 +68,13 @@ struct BibleAPIClient {
     static func fetchRandomVerse(
         translation: String = "web"
     ) async throws -> BibleResponse {
-        let urlString = "\(baseURL)/?random=verse&translation=\(translation)"
+        var components = URLComponents(string: baseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "random", value: "verse"),
+            URLQueryItem(name: "translation", value: translation)
+        ]
 
-        guard let url = URL(string: urlString) else {
+        guard let url = components?.url else {
             throw BibleAPIError.invalidURL
         }
 

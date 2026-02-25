@@ -21,7 +21,7 @@ struct FavoritesView: View {
         NavigationStack {
             Group {
                 if favorites.isEmpty {
-                    EmptyStateView.favorites
+                    emptyState
                         .transition(.opacity)
                 } else {
                     favoritesList
@@ -29,62 +29,75 @@ struct FavoritesView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: favorites.isEmpty)
-            .navigationTitle("Favorites")
         }
         // Haptic feedback on delete
         .sensoryFeedback(.impact(weight: .light), trigger: deleteCount)
+    }
+
+    private var headerView: some View {
+        Text("Favorites")
+            .font(AppTheme.heading)
+            .foregroundStyle(Color.primaryText)
+            .padding(.top, AppTheme.sectionGap)
+            .padding(.bottom, AppTheme.screenMargin)
+            .frame(maxWidth: .infinity)
+            .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: - Favorites List
 
     private var favoritesList: some View {
         ScrollView {
-            LazyVStack(spacing: AppTheme.itemSpacing) {
-                ForEach(favorites) { favorite in
-                    FavoriteRowView(favorite: favorite)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedFavorite = favorite
-                        }
-                        .swipeToDelete {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                favoritesViewModel.removeFavorite(favorite, context: modelContext)
+            VStack(spacing: 0) {
+                headerView
+
+                LazyVStack(spacing: AppTheme.itemSpacing) {
+                    ForEach(favorites) { favorite in
+                        FavoriteRowView(favorite: favorite)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedFavorite = favorite
                             }
-                            deleteCount += 1
-                        }
-                        .contextMenu {
-                            Button(role: .destructive) {
+                            .swipeToDelete {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     favoritesViewModel.removeFavorite(favorite, context: modelContext)
                                 }
                                 deleteCount += 1
-                            } label: {
-                                Label("Delete", systemImage: "trash")
                             }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        favoritesViewModel.removeFavorite(favorite, context: modelContext)
+                                    }
+                                    deleteCount += 1
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
 
-                            if let shareText = shareText(for: favorite) {
-                                ShareLink(item: shareText) {
-                                    Label("Share", systemImage: "square.and.arrow.up")
+                                if let shareText = shareText(for: favorite) {
+                                    ShareLink(item: shareText) {
+                                        Label("Share", systemImage: "square.and.arrow.up")
+                                    }
+                                }
+                                
+                                Button {
+                                    UIPasteboard.general.string = favorite.text
+                                } label: {
+                                    Label("Copy Text", systemImage: "doc.on.doc")
                                 }
                             }
-                            
-                            Button {
-                                UIPasteboard.general.string = favorite.text
-                            } label: {
-                                Label("Copy Text", systemImage: "doc.on.doc")
-                            }
-                        }
-                        .transition(.asymmetric(
-                            insertion: .slide.combined(with: .opacity),
-                            removal: .move(edge: .trailing).combined(with: .opacity)
-                        ))
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(favorite.reference), \(favorite.text)")
-                        .accessibilityHint("Double-tap to view details, swipe left to delete")
+                            .transition(.asymmetric(
+                                insertion: .slide.combined(with: .opacity),
+                                removal: .move(edge: .trailing).combined(with: .opacity)
+                            ))
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(favorite.reference), \(favorite.text)")
+                            .accessibilityHint("Double-tap to view details, swipe left to delete")
+                    }
                 }
+                .padding(.horizontal, AppTheme.screenMargin)
+                .padding(.vertical, AppTheme.itemSpacing)
             }
-            .padding(.horizontal, AppTheme.screenMargin)
-            .padding(.vertical, AppTheme.itemSpacing)
         }
         .navigationDestination(item: $selectedFavorite) { favorite in
             FavoriteDetailView(
@@ -97,7 +110,12 @@ struct FavoritesView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        EmptyStateView.favorites
+        ScrollView {
+            VStack(spacing: 0) {
+                headerView
+                EmptyStateView.favorites
+            }
+        }
     }
 
     // MARK: - Helpers

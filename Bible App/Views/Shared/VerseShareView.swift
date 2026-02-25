@@ -91,10 +91,10 @@ struct VerseShareView: View {
     private static let imageCache = NSCache<NSString, UIImage>()
 
     /// Renders this view to a `UIImage` using `ImageRenderer`.
-    /// Results are cached by verse reference to avoid expensive re-rendering.
+    /// Results are cached by verse reference AND translation to avoid stale images.
     @MainActor
     static func renderImage(for response: BibleResponse) -> UIImage? {
-        let cacheKey = response.reference as NSString
+        let cacheKey = "\(response.translationId)_\(response.reference)" as NSString
         
         // Check cache first
         if let cached = imageCache.object(forKey: cacheKey) {
@@ -123,7 +123,7 @@ struct VerseShareView: View {
     /// Returns cached image without rendering - returns nil if not cached
     /// Use this for share sheets where the image may have been pre-rendered
     static func cachedImage(for response: BibleResponse) -> UIImage? {
-        let cacheKey = response.reference as NSString
+        let cacheKey = "\(response.translationId)_\(response.reference)" as NSString
         return imageCache.object(forKey: cacheKey)
     }
 
@@ -131,7 +131,7 @@ struct VerseShareView: View {
     /// Call this when verse is displayed to prepare for sharing
     @MainActor
     static func preRender(for response: BibleResponse) {
-        let cacheKey = response.reference as NSString
+        let cacheKey = "\(response.translationId)_\(response.reference)" as NSString
         
         // Skip if already cached
         if imageCache.object(forKey: cacheKey) != nil {

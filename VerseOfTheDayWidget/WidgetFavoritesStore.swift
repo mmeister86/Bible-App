@@ -1,41 +1,11 @@
 import Foundation
 import SwiftData
-
-@Model
-final class FavoriteVerse {
-    var id: UUID
-    @Attribute(.unique) var reference: String
-    var text: String
-    var bookName: String
-    var chapter: Int
-    var verse: Int
-    var translationName: String
-    var savedAt: Date
-
-    init(
-        id: UUID = UUID(),
-        reference: String,
-        text: String,
-        bookName: String,
-        chapter: Int,
-        verse: Int,
-        translationName: String,
-        savedAt: Date = Date()
-    ) {
-        self.id = id
-        self.reference = reference
-        self.text = text
-        self.bookName = bookName
-        self.chapter = chapter
-        self.verse = verse
-        self.translationName = translationName
-        self.savedAt = savedAt
-    }
-}
+import OSLog
 
 struct WidgetFavoritesStore {
     private let appGroupID = "group.dev.matthiasmeister.Bible-App"
     private let storeFilename = "Favorites.sqlite"
+    private let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "WidgetFavoritesStore")
 
     func isFavorited(reference: String) -> Bool {
         guard let container = try? makeContainer() else {
@@ -91,8 +61,11 @@ struct WidgetFavoritesStore {
     }
 
     private func makeContainer() throws -> ModelContainer {
+        logger.debug("Using FavoriteVerse model type: \(String(reflecting: FavoriteVerse.self), privacy: .public)")
         let schema = Schema([FavoriteVerse.self])
-        let configuration = ModelConfiguration(schema: schema, url: try storeURL())
+        let url = try storeURL()
+        logger.debug("Using favorites store at \(url.path(percentEncoded: false), privacy: .public)")
+        let configuration = ModelConfiguration(schema: schema, url: url)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 

@@ -6,6 +6,7 @@
 import Foundation
 import SwiftUI
 import WidgetKit
+import OSLog
 
 /// Appearance mode for the app (System, Light, Dark).
 enum AppearanceMode: Int, CaseIterable {
@@ -66,28 +67,29 @@ final class SettingsViewModel {
             UserDefaults.standard.set(selectedTranslation, forKey: "selectedTranslation")
             Self.sharedDefaults?.set(selectedTranslation, forKey: "selectedTranslation")
             
-            // If translation changed, fetch same verse in new language and update widget
             if oldValue != selectedTranslation {
-                Task {
+                translationUpdateTask?.cancel()
+                translationUpdateTask = Task {
                     await Self.updateVerseForNewTranslation(newTranslation: selectedTranslation)
                 }
             }
         }
     }
     
+    private var translationUpdateTask: Task<Void, Never>?
+    
     /// Fetch the same verse in a new translation and notify the widget
+    private static let logger = Logger(subsystem: "dev.matthiasmeister.Bible-App", category: "Settings")
+    
     private static func updateVerseForNewTranslation(newTranslation: String) async {
         do {
-            // Load the same verse in the new translation
             _ = try await DailyVerseService.fetchAndCacheDailyVerseInNewTranslation(
                 newTranslation: newTranslation
             )
             
-            // Notify widget to refresh with new translation (synchronous, runs on current actor)
             WidgetCenter.shared.reloadTimelines(ofKind: "VerseOfTheDayWidget")
         } catch {
-            // Log error but don't crash - widget will update on next refresh
-            print("Failed to update verse for new translation: \(error)")
+            logger.error("Failed to update verse for new translation: \(error.localizedDescription, privacy: .public)")
         }
     }
 

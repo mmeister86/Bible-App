@@ -26,13 +26,13 @@ final class FavoritesViewModel {
             translationName: response.translationName
         )
         context.insert(favorite)
-        syncWidgetsWithFavorites()
+        syncWidgetsWithFavorites(context: context)
     }
 
     /// Remove a FavoriteVerse from the model context.
     func removeFavorite(_ favorite: FavoriteVerse, context: ModelContext) {
         context.delete(favorite)
-        syncWidgetsWithFavorites()
+        syncWidgetsWithFavorites(context: context)
     }
 
     /// Check whether a given reference string already exists in the favorites array.
@@ -44,7 +44,7 @@ final class FavoritesViewModel {
     func removeFavorite(byReference reference: String, in favorites: [FavoriteVerse], context: ModelContext) {
         if let existing = favorites.first(where: { $0.reference == reference }) {
             context.delete(existing)
-            syncWidgetsWithFavorites()
+            syncWidgetsWithFavorites(context: context)
         }
     }
 
@@ -57,7 +57,8 @@ final class FavoritesViewModel {
         }
     }
 
-    private func syncWidgetsWithFavorites() {
+    private func syncWidgetsWithFavorites(context: ModelContext) {
+        try? context.save()
         WidgetCenter.shared.reloadTimelines(ofKind: verseOfDayWidgetKind)
     }
 }

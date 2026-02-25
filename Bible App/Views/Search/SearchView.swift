@@ -6,7 +6,7 @@
 import SwiftUI
 import SwiftData
 
-/// Search screen with `.searchable` modifier, recent searches as tappable chips,
+/// Search screen with a thumb-friendly bottom search bar, recent searches as tappable chips,
 /// suggested verses as a "Try these" section, and verse results displayed in a VerseCardView.
 /// Includes smooth transitions, animations, and haptic feedback.
 struct SearchView: View {
@@ -16,6 +16,7 @@ struct SearchView: View {
     @State private var resultAppeared = false
     @State private var favoriteToggleCount = 0
     @State private var shareTriggered = false
+    @FocusState private var isSearchFieldFocused: Bool
 
     @Environment(\.modelContext) private var modelContext
     @Query private var favorites: [FavoriteVerse]
@@ -32,25 +33,75 @@ struct SearchView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
         NavigationStack {
-            ZStack {
-                Color(.systemBackground)
-                    .ignoresSafeArea()
-
-                content
-            }
-            .navigationTitle("Search")
-            .searchable(
-                text: $viewModel.searchText,
-                prompt: "e.g. John 3:16, Romans 8:28"
-            )
-            .onSubmit(of: .search) {
-                resultAppeared = false
-                Task { await searchWithCache() }
+            content
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        isSearchFieldFocused = false
+                    }
+                )
+            .safeAreaInset(edge: .bottom) {
+                bottomSearchBar(searchText: $viewModel.searchText)
             }
         }
         // Haptic feedback
         .sensoryFeedback(.impact(weight: .medium), trigger: favoriteToggleCount)
         .sensoryFeedback(.success, trigger: shareTriggered)
+    }
+
+    private var headerView: some View {
+        Text("Search")
+            .font(AppTheme.heading)
+            .foregroundStyle(Color.primaryText)
+            .padding(.top, AppTheme.sectionGap)
+            .padding(.bottom, AppTheme.screenMargin)
+            .frame(maxWidth: .infinity)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func bottomSearchBar(searchText: Binding<String>) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Color.secondaryText)
+                .font(.title3)
+
+            TextField("e.g. John 3:16, Romans 8:28", text: searchText)
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+                .focused($isSearchFieldFocused)
+                .onSubmit {
+                    resultAppeared = false
+                    Task { await searchWithCache() }
+                }
+
+            if !searchText.wrappedValue.isEmpty {
+                Button {
+                    viewModel.clearSearch()
+                    resultAppeared = false
+                    isSearchFieldFocused = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(Color.secondaryText.opacity(0.75))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search text")
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 52)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.dividerColor.opacity(0.7), lineWidth: 1)
+        )
+        .padding(.horizontal, AppTheme.screenMargin)
+        .padding(.top, 8)
+        .padding(.bottom, 18)
+        .background(Color.clear)
     }
     
     // MARK: - Search Logic
@@ -79,14 +130,26 @@ struct SearchView: View {
     private var content: some View {
         if viewModel.isLoading && viewModel.result == nil {
             // Show skeleton during initial search
-            VStack(spacing: AppTheme.screenMargin) {
-                VerseSkeletonView()
-                    .padding(.horizontal, AppTheme.screenMargin)
+            ScrollView {
+                VStack(spacing: AppTheme.screenMargin) {
+                    headerView
+
+                    VerseSkeletonView()
+                        .padding(.horizontal, AppTheme.screenMargin)
+                }
             }
+            .scrollDismissesKeyboard(.immediately)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transition(.opacity)
         } else if let errorMessage = viewModel.errorMessage, viewModel.result == nil {
-            errorState(errorMessage)
+            ScrollView {
+                VStack(spacing: AppTheme.screenMargin) {
+                    headerView
+                    errorState(errorMessage)
+                }
+                .padding(.horizontal, AppTheme.screenMargin)
+            }
+            .scrollDismissesKeyboard(.immediately)
                 .transition(.opacity)
         } else if let result = viewModel.result {
             SearchResultContentView(
@@ -114,6 +177,8 @@ struct SearchView: View {
     private var emptyState: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppTheme.screenMargin) {
+                headerView
+
                 // Recent Searches
                 if !viewModel.recentSearches.isEmpty {
                     VStack(alignment: .leading, spacing: AppTheme.itemSpacing) {
@@ -225,6 +290,7 @@ struct SearchView: View {
             }
             .padding(AppTheme.screenMargin)
         }
+        .scrollDismissesKeyboard(.immediately)
     }
 
     // MARK: - Error State
@@ -265,6 +331,14 @@ private struct SearchResultContentView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AppTheme.screenMargin) {
+                Text("Search")
+                    .font(AppTheme.heading)
+                    .foregroundStyle(Color.primaryText)
+                    .padding(.top, AppTheme.sectionGap)
+                    .padding(.bottom, AppTheme.screenMargin)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityAddTraits(.isHeader)
+
                 VerseCardView(response: result)
                     .scaleEffect(resultAppeared ? 1.0 : 0.95)
                     .opacity(resultAppeared ? 1.0 : 0.0)
@@ -308,6 +382,7 @@ private struct SearchResultContentView: View {
             }
             .padding(AppTheme.screenMargin)
         }
+        .scrollDismissesKeyboard(.immediately)
         .shareSheet(isPresented: $showShareSheet, items: shareItems(for: result))
     }
 
