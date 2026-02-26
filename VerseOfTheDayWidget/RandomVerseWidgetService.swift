@@ -33,10 +33,10 @@ struct RandomVerseWidgetService {
         sharedDefaults?.string(forKey: "selectedTranslation") ?? "web"
     }
 
-    func fetchRandomVerse() async -> RandomVerseWidgetData {
+    func fetchRandomVerse(forceRefresh: Bool = false) async -> RandomVerseWidgetData {
         logger.debug("Widget fetchRandomVerse start. selectedTranslation=\(selectedTranslation, privacy: .public)")
 
-        if isRandomVerseFresh(), let cached = cachedVerse() {
+        if !forceRefresh, isRandomVerseFresh(), let cached = cachedVerse() {
             let cachedTranslation = sharedDefaults?.string(forKey: Self.randomVerseTranslationKey) ?? "web"
             if cachedTranslation == selectedTranslation {
                 logger.debug("Using fresh random cache: \(cached.reference, privacy: .public)")
@@ -89,24 +89,8 @@ struct RandomVerseWidgetService {
     private func fetchVerseFromAPI() async throws -> (verse: RandomVerseWidgetData, translationId: String, rawData: Data) {
         let translation = selectedTranslation
 
-        var components = URLComponents(string: "https://bible-api.com")
-        components?.queryItems = [
-            URLQueryItem(name: "random", value: "verse"),
-            URLQueryItem(name: "translation", value: translation)
-        ]
-
-        guard let url = components?.url else {
-            throw URLError(.badURL)
-        }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let apiResponse = try decoder.decode(RandomWidgetBibleResponse.self, from: data)
+        let apiResponse = try await BibleAPIClient.fetchRandomVerse(translation: translation)
+        let data = try JSONEncoder().encode(apiResponse)
 
         return (
             RandomVerseWidgetData(
@@ -116,10 +100,10 @@ struct RandomVerseWidgetService {
                 bookName: apiResponse.verses.first?.bookName ?? parsedBookName(from: apiResponse.reference),
                 chapter: apiResponse.verses.first?.chapter ?? parsedChapter(from: apiResponse.reference),
                 verse: apiResponse.verses.first?.verse ?? parsedVerse(from: apiResponse.reference),
-                translationName: apiResponse.translationName ?? "",
+                translationName: apiResponse.translationName,
                 isFavorited: false
             ),
-            translation,
+            apiResponse.translationId,
             data
         )
     }
@@ -131,21 +115,34 @@ struct RandomVerseWidgetService {
             return nil
         }
 
+        if let cached = try? JSONDecoder().decode(BibleResponse.self, from: data) {
+            return RandomVerseWidgetData(
+                reference: cached.reference,
+                text: cached.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                source: cached.translationName,
+                bookName: cached.verses.first?.bookName ?? parsedBookName(from: cached.reference),
+                chapter: cached.verses.first?.chapter ?? parsedChapter(from: cached.reference),
+                verse: cached.verses.first?.verse ?? parsedVerse(from: cached.reference),
+                translationName: cached.translationName,
+                isFavorited: false
+            )
+        }
+
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        guard let cached = try? decoder.decode(RandomWidgetBibleResponse.self, from: data) else {
+        guard let legacyCached = try? decoder.decode(RandomWidgetBibleResponse.self, from: data) else {
             logger.error("Random cache decode failed")
             return nil
         }
 
         return RandomVerseWidgetData(
-            reference: cached.reference,
-            text: cached.text.trimmingCharacters(in: .whitespacesAndNewlines),
-            source: cached.translationName,
-            bookName: cached.verses.first?.bookName ?? parsedBookName(from: cached.reference),
-            chapter: cached.verses.first?.chapter ?? parsedChapter(from: cached.reference),
-            verse: cached.verses.first?.verse ?? parsedVerse(from: cached.reference),
-            translationName: cached.translationName ?? "",
+            reference: legacyCached.reference,
+            text: legacyCached.text.trimmingCharacters(in: .whitespacesAndNewlines),
+            source: legacyCached.translationName,
+            bookName: legacyCached.verses.first?.bookName ?? parsedBookName(from: legacyCached.reference),
+            chapter: legacyCached.verses.first?.chapter ?? parsedChapter(from: legacyCached.reference),
+            verse: legacyCached.verses.first?.verse ?? parsedVerse(from: legacyCached.reference),
+            translationName: legacyCached.translationName ?? "",
             isFavorited: false
         )
     }

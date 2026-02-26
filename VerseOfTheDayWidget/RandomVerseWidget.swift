@@ -34,7 +34,6 @@ struct RandomVerseTimelineProvider: TimelineProvider {
 struct RandomVerseWidgetView: View {
     var entry: RandomVerseTimelineProvider.Entry
     @Environment(\.widgetFamily) private var family
-    @Environment(\.colorScheme) private var colorScheme
 
     private var currentTranslationId: String {
         let defaults = UserDefaults(suiteName: "group.dev.matthiasmeister.Bible-App")
@@ -45,7 +44,7 @@ struct RandomVerseWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Random Verse")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(widgetAccentGold)
+                .foregroundStyle(Color.accentGold)
 
             Text("\u{201C}\(entry.verse.text)\u{201D}")
                 .font(fontSize)
@@ -65,10 +64,16 @@ struct RandomVerseWidgetView: View {
     private var actionRow: some View {
         switch family {
         case .systemSmall:
-            Text(entry.verse.reference)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            HStack(spacing: 8) {
+                Text(entry.verse.reference)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                shuffleButton
+            }
         case .systemMedium:
             HStack(spacing: 8) {
                 Text(verseAttribution)
@@ -78,7 +83,10 @@ struct RandomVerseWidgetView: View {
 
                 Spacer(minLength: 0)
 
-                favoriteButton
+                HStack(spacing: 12) {
+                    shuffleButton
+                    favoriteButton
+                }
             }
         case .systemLarge:
             HStack(spacing: 16) {
@@ -90,6 +98,7 @@ struct RandomVerseWidgetView: View {
                 Spacer(minLength: 0)
 
                 HStack(spacing: 12) {
+                    shuffleButton
                     favoriteButton
                     shareButton
                 }
@@ -107,6 +116,16 @@ struct RandomVerseWidgetView: View {
         }
     }
 
+    private var shuffleButton: some View {
+        Button(intent: ShuffleRandomVerseIntent()) {
+            Image(systemName: "shuffle")
+                .font(.body)
+                .foregroundStyle(Color.accentGold)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Shuffle Verse")
+    }
+
     private var favoriteButton: some View {
         Button(
             intent: ToggleFavoriteVerseIntent(
@@ -122,7 +141,7 @@ struct RandomVerseWidgetView: View {
         ) {
             Image(systemName: entry.verse.isFavorited ? "heart.fill" : "heart")
                 .font(.body)
-                .foregroundStyle(widgetAccentGold)
+                .foregroundStyle(Color.accentGold)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(entry.verse.isFavorited ? "Remove Favorite" : "Add Favorite")
@@ -142,7 +161,7 @@ struct RandomVerseWidgetView: View {
         ) {
             Image(systemName: "square.and.arrow.up")
                 .font(.body)
-                .foregroundStyle(widgetAccentGold)
+                .foregroundStyle(Color.accentGold)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Share Verse")
@@ -190,14 +209,6 @@ struct RandomVerseWidgetView: View {
         return "\(entry.verse.reference) \u{2022} \(source)"
     }
 
-    private var widgetAccentGold: Color {
-        switch colorScheme {
-        case .dark:
-            return Color(red: 226.0 / 255.0, green: 184.0 / 255.0, blue: 97.0 / 255.0)
-        default:
-            return Color(red: 201.0 / 255.0, green: 149.0 / 255.0, blue: 60.0 / 255.0)
-        }
-    }
 }
 
 struct RandomVerseWidget: Widget {

@@ -4,6 +4,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 extension Color {
     /// Initialize a Color from a hex string (e.g. "#C9953C" or "C9953C")
@@ -57,6 +60,7 @@ extension Color {
 private extension Color {
     /// Creates a dynamic color that adapts to the current color scheme
     init(light: Color, dark: Color) {
+#if canImport(UIKit)
         self.init(uiColor: UIColor { traitCollection in
             switch traitCollection.userInterfaceStyle {
             case .dark:
@@ -65,5 +69,8 @@ private extension Color {
                 return UIColor(light)
             }
         })
+#else
+        self = light
+#endif
     }
 }
