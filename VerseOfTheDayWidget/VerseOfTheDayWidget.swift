@@ -48,7 +48,7 @@ struct DailyVerseWidgetView: View {
                 .foregroundStyle(widgetAccentGold)
 
             Text("\u{201C}\(entry.verse.text)\u{201D}")
-                .font(fontSize)
+                .font(fontSize(for: family))
                 .lineLimit(lineLimit)
                 .multilineTextAlignment(.leading)
 
@@ -148,14 +148,14 @@ struct DailyVerseWidgetView: View {
         .accessibilityLabel("Share Verse")
     }
 
-    private var fontSize: Font {
+    private func fontSize(for family: WidgetFamily) -> Font {
         switch family {
         case .systemSmall:
             return .system(.footnote, design: .serif)
         case .systemMedium:
             return .system(.body, design: .serif)
         case .systemLarge:
-            return .system(.body, design: .serif)
+            return .system(size: 22, design: .serif)
         case .systemExtraLarge, .accessoryCircular, .accessoryRectangular, .accessoryInline:
             return .system(.body, design: .serif)
         @unknown default:
