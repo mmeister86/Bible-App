@@ -79,6 +79,7 @@ struct DailyVerseService {
             defaults.set(todayString, forKey: dailyVerseDateKey)
             defaults.set(response.translationId, forKey: dailyVerseTranslationKey)
             defaults.set(response.reference, forKey: dailyVerseReferenceKey)
+            IOSWatchConnectivityManager.shared.sendDailyVerseUpdate(response)
             logger.debug(
                 "Cached shared daily verse reference=\(response.reference, privacy: .public) translation=\(response.translationId, privacy: .public)"
             )

@@ -7,12 +7,45 @@
 		<key>Bible App.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>2</integer>
+		</dict>
+		<key>DailyVerse WatchApp Watch App.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
 		</dict>
 		<key>VerseOfTheDayWidget.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>1</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>393845472F37A41B001468D9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>399CAA542F5CCB2800CB16D4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>399CAA602F5CCB2900CB16D4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>399CAA6A2F5CCB2900CB16D4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>39A1000A2F50000100000001</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		39992E9F2F4D9B6300A8AA6D /* AppIcon 2.icon in Resources */ = {isa = PBXBuildFile; fileRef = 39992E9E2F4D9B6300A8AA6D /* AppIcon 2.icon */; };
+		399CAA752F5CCB2900CB16D4 /* DailyVerse WatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 399CAA552F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		39A100092F50000100000001 /* VerseOfTheDayWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 39A100012F50000100000001 /* VerseOfTheDayWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -26,6 +27,27 @@
 			remoteGlobalIDString = 393845472F37A41B001468D9;
 			remoteInfo = "Bible App";
 		};
+		399CAA622F5CCB2900CB16D4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 393845402F37A41B001468D9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 399CAA542F5CCB2800CB16D4;
+			remoteInfo = "DailyVerse WatchApp Watch App";
+		};
+		399CAA6C2F5CCB2900CB16D4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 393845402F37A41B001468D9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 399CAA542F5CCB2800CB16D4;
+			remoteInfo = "DailyVerse WatchApp Watch App";
+		};
+		399CAA732F5CCB2900CB16D4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 393845402F37A41B001468D9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 399CAA542F5CCB2800CB16D4;
+			remoteInfo = "DailyVerse WatchApp Watch App";
+		};
 		39A1000E2F50000100000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 393845402F37A41B001468D9 /* Project object */;
@@ -36,6 +58,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		399CAA762F5CCB2900CB16D4 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				399CAA752F5CCB2900CB16D4 /* DailyVerse WatchApp Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		39A100082F50000100000001 /* Embed App Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -54,6 +87,9 @@
 		393845572F37A41D001468D9 /* Bible AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Bible AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		393845612F37A41D001468D9 /* Bible AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Bible AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		39992E9E2F4D9B6300A8AA6D /* AppIcon 2.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "AppIcon 2.icon"; sourceTree = "<group>"; };
+		399CAA552F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DailyVerse WatchApp Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		399CAA612F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "DailyVerse WatchApp Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		399CAA6B2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "DailyVerse WatchApp Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		39A100012F50000100000001 /* VerseOfTheDayWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VerseOfTheDayWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -64,6 +100,14 @@
 				SupportingFiles/Info.plist,
 			);
 			target = 393845472F37A41B001468D9 /* Bible App */;
+		};
+		39D200012F90000100000001 /* Exceptions for "Shared" folder in "DailyVerse WatchApp Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Color+Extensions.swift",
+				ShareVerseIntent.swift,
+			);
+			target = 399CAA542F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -86,6 +130,21 @@
 			path = "Bible AppUITests";
 			sourceTree = "<group>";
 		};
+		399CAA562F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DailyVerse WatchApp Watch App";
+			sourceTree = "<group>";
+		};
+		399CAA642F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DailyVerse WatchApp Watch AppTests";
+			sourceTree = "<group>";
+		};
+		399CAA6E2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DailyVerse WatchApp Watch AppUITests";
+			sourceTree = "<group>";
+		};
 		39A100042F50000100000001 /* VerseOfTheDayWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = VerseOfTheDayWidget;
@@ -93,6 +152,9 @@
 		};
 		39A100202F50000100000001 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				39D200012F90000100000001 /* Exceptions for "Shared" folder in "DailyVerse WatchApp Watch App" target */,
+			);
 			path = Shared;
 			sourceTree = "<group>";
 		};
@@ -120,6 +182,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		399CAA522F5CCB2800CB16D4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA5E2F5CCB2900CB16D4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA682F5CCB2900CB16D4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		39A100052F50000100000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -138,6 +221,9 @@
 				3938454A2F37A41B001468D9 /* Bible App */,
 				3938455A2F37A41D001468D9 /* Bible AppTests */,
 				393845642F37A41D001468D9 /* Bible AppUITests */,
+				399CAA562F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */,
+				399CAA642F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests */,
+				399CAA6E2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests */,
 				393845492F37A41B001468D9 /* Products */,
 				39992E9E2F4D9B6300A8AA6D /* AppIcon 2.icon */,
 			);
@@ -150,6 +236,9 @@
 				393845572F37A41D001468D9 /* Bible AppTests.xctest */,
 				393845612F37A41D001468D9 /* Bible AppUITests.xctest */,
 				39A100012F50000100000001 /* VerseOfTheDayWidget.appex */,
+				399CAA552F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App.app */,
+				399CAA612F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests.xctest */,
+				399CAA6B2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -165,11 +254,13 @@
 				393845452F37A41B001468D9 /* Frameworks */,
 				393845462F37A41B001468D9 /* Resources */,
 				39A100082F50000100000001 /* Embed App Extensions */,
+				399CAA762F5CCB2900CB16D4 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				39A1000F2F50000100000001 /* PBXTargetDependency */,
+				399CAA742F5CCB2900CB16D4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3938454A2F37A41B001468D9 /* Bible App */,
@@ -228,6 +319,75 @@
 			productReference = 393845612F37A41D001468D9 /* Bible AppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		399CAA542F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 399CAA7D2F5CCB2900CB16D4 /* Build configuration list for PBXNativeTarget "DailyVerse WatchApp Watch App" */;
+			buildPhases = (
+				399CAA512F5CCB2800CB16D4 /* Sources */,
+				399CAA522F5CCB2800CB16D4 /* Frameworks */,
+				399CAA532F5CCB2800CB16D4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				399CAA562F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */,
+				39A100202F50000100000001 /* Shared */,
+			);
+			name = "DailyVerse WatchApp Watch App";
+			packageProductDependencies = (
+			);
+			productName = "DailyVerse WatchApp Watch App";
+			productReference = 399CAA552F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		399CAA602F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 399CAA7E2F5CCB2900CB16D4 /* Build configuration list for PBXNativeTarget "DailyVerse WatchApp Watch AppTests" */;
+			buildPhases = (
+				399CAA5D2F5CCB2900CB16D4 /* Sources */,
+				399CAA5E2F5CCB2900CB16D4 /* Frameworks */,
+				399CAA5F2F5CCB2900CB16D4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				399CAA632F5CCB2900CB16D4 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				399CAA642F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests */,
+			);
+			name = "DailyVerse WatchApp Watch AppTests";
+			packageProductDependencies = (
+			);
+			productName = "DailyVerse WatchApp Watch AppTests";
+			productReference = 399CAA612F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		399CAA6A2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 399CAA7F2F5CCB2900CB16D4 /* Build configuration list for PBXNativeTarget "DailyVerse WatchApp Watch AppUITests" */;
+			buildPhases = (
+				399CAA672F5CCB2900CB16D4 /* Sources */,
+				399CAA682F5CCB2900CB16D4 /* Frameworks */,
+				399CAA692F5CCB2900CB16D4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				399CAA6D2F5CCB2900CB16D4 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				399CAA6E2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests */,
+			);
+			name = "DailyVerse WatchApp Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "DailyVerse WatchApp Watch AppUITests";
+			productReference = 399CAA6B2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		39A1000A2F50000100000001 /* VerseOfTheDayWidget */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 39A1000B2F50000100000001 /* Build configuration list for PBXNativeTarget "VerseOfTheDayWidget" */;
@@ -258,7 +418,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					393845472F37A41B001468D9 = {
@@ -271,6 +431,17 @@
 					393845602F37A41D001468D9 = {
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = 393845472F37A41B001468D9;
+					};
+					399CAA542F5CCB2800CB16D4 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					399CAA602F5CCB2900CB16D4 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 399CAA542F5CCB2800CB16D4;
+					};
+					399CAA6A2F5CCB2900CB16D4 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 399CAA542F5CCB2800CB16D4;
 					};
 					39A1000A2F50000100000001 = {
 						CreatedOnToolsVersion = 26.2;
@@ -295,6 +466,9 @@
 				393845562F37A41D001468D9 /* Bible AppTests */,
 				393845602F37A41D001468D9 /* Bible AppUITests */,
 				39A1000A2F50000100000001 /* VerseOfTheDayWidget */,
+				399CAA542F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */,
+				399CAA602F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppTests */,
+				399CAA6A2F5CCB2900CB16D4 /* DailyVerse WatchApp Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -316,6 +490,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3938455F2F37A41D001468D9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA532F5CCB2800CB16D4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA5F2F5CCB2900CB16D4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA692F5CCB2900CB16D4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -353,6 +548,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		399CAA512F5CCB2800CB16D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA5D2F5CCB2900CB16D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		399CAA672F5CCB2900CB16D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		39A100072F50000100000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -372,6 +588,21 @@
 			isa = PBXTargetDependency;
 			target = 393845472F37A41B001468D9 /* Bible App */;
 			targetProxy = 393845622F37A41D001468D9 /* PBXContainerItemProxy */;
+		};
+		399CAA632F5CCB2900CB16D4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 399CAA542F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */;
+			targetProxy = 399CAA622F5CCB2900CB16D4 /* PBXContainerItemProxy */;
+		};
+		399CAA6D2F5CCB2900CB16D4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 399CAA542F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */;
+			targetProxy = 399CAA6C2F5CCB2900CB16D4 /* PBXContainerItemProxy */;
+		};
+		399CAA742F5CCB2900CB16D4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 399CAA542F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App */;
+			targetProxy = 399CAA732F5CCB2900CB16D4 /* PBXContainerItemProxy */;
 		};
 		39A1000F2F50000100000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -510,18 +741,19 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "Bible App/Bible App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = PB8PTB6W8W;
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = Info.plist;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Bible App/SupportingFiles/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DailyVerse;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.Bible-App";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -546,18 +778,19 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "Bible App/Bible App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = PB8PTB6W8W;
 				ENABLE_PREVIEWS = YES;
 				EXCLUDED_SOURCE_FILE_NAMES = Info.plist;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Bible App/SupportingFiles/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DailyVerse;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.Bible-App";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -658,13 +891,169 @@
 			};
 			name = Release;
 		};
+		399CAA772F5CCB2900CB16D4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = PB8PTB6W8W;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DailyVerse;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "dev.matthiasmeister.Bible-App";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.Bible-App.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
+			};
+			name = Debug;
+		};
+		399CAA782F5CCB2900CB16D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 6;
+				DEVELOPMENT_TEAM = PB8PTB6W8W;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DailyVerse;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "dev.matthiasmeister.Bible-App";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.Bible-App.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.6;
+			};
+			name = Release;
+		};
+		399CAA792F5CCB2900CB16D4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PB8PTB6W8W;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.dailyverse.DailyVerse-WatchApp-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DailyVerse WatchApp Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DailyVerse WatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		399CAA7A2F5CCB2900CB16D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PB8PTB6W8W;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.dailyverse.DailyVerse-WatchApp-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DailyVerse WatchApp Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DailyVerse WatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
+		399CAA7B2F5CCB2900CB16D4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PB8PTB6W8W;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.dailyverse.DailyVerse-WatchApp-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "DailyVerse WatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		399CAA7C2F5CCB2900CB16D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PB8PTB6W8W;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.dailyverse.DailyVerse-WatchApp-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "DailyVerse WatchApp Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 		39A1000C2F50000100000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = VerseOfTheDayWidget/VerseOfTheDayWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = PB8PTB6W8W;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "VerseOfTheDayWidget-Info.plist";
@@ -674,7 +1063,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.Bible-App.VerseOfTheDayWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -695,7 +1084,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = VerseOfTheDayWidget/VerseOfTheDayWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = PB8PTB6W8W;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "VerseOfTheDayWidget-Info.plist";
@@ -705,7 +1094,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.matthiasmeister.Bible-App.VerseOfTheDayWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -755,6 +1144,33 @@
 			buildConfigurations = (
 				393845722F37A41D001468D9 /* Debug */,
 				393845732F37A41D001468D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		399CAA7D2F5CCB2900CB16D4 /* Build configuration list for PBXNativeTarget "DailyVerse WatchApp Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				399CAA772F5CCB2900CB16D4 /* Debug */,
+				399CAA782F5CCB2900CB16D4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		399CAA7E2F5CCB2900CB16D4 /* Build configuration list for PBXNativeTarget "DailyVerse WatchApp Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				399CAA792F5CCB2900CB16D4 /* Debug */,
+				399CAA7A2F5CCB2900CB16D4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		399CAA7F2F5CCB2900CB16D4 /* Build configuration list for PBXNativeTarget "DailyVerse WatchApp Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				399CAA7B2F5CCB2900CB16D4 /* Debug */,
+				399CAA7C2F5CCB2900CB16D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

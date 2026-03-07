@@ -55,6 +55,7 @@ struct Bible_AppApp: App {
 
     init() {
         UNUserNotificationCenter.current().delegate = notificationDelegate
+        IOSWatchConnectivityManager.shared.activate()
 
         let defaults = UserDefaults.standard
         if defaults.bool(forKey: "notificationsEnabled") {
