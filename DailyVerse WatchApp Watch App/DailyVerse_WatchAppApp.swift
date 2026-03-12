@@ -16,6 +16,7 @@ struct DailyVerse_WatchApp_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(Color("AccentColor"))
         }
     }
 }
