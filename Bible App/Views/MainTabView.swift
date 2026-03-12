@@ -10,9 +10,24 @@ struct MainTabView: View {
 
     enum Tab: Int {
         case today, discover, search, favorites, settings
+
+        init(destination: QuickActionDestination) {
+            switch destination {
+            case .today: self = .today
+            case .discover: self = .discover
+            case .search: self = .search
+            case .favorites: self = .favorites
+            }
+        }
     }
 
-    @State private var selectedTab: Tab = .today
+    @ObservedObject private var quickActionCenter = QuickActionCenter.shared
+    @State private var selectedTab: Tab
+
+    init() {
+        let initialDestination = QuickActionCenter.shared.consumeInitialDestination()
+        _selectedTab = State(initialValue: Tab(destination: initialDestination))
+    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -49,6 +64,14 @@ struct MainTabView: View {
         .tint(Color.accentGold)
         .onReceive(NotificationCenter.default.publisher(for: .didTapDailyVerseNotification)) { _ in
             selectedTab = .today
+        }
+        .onReceive(quickActionCenter.$requestedDestination) { destination in
+            guard let destination else {
+                return
+            }
+
+            selectedTab = Tab(destination: destination)
+            quickActionCenter.consumeCurrentRequest()
         }
     }
 }

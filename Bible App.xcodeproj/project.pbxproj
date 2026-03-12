@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		39992E9F2F4D9B6300A8AA6D /* AppIcon 2.icon in Resources */ = {isa = PBXBuildFile; fileRef = 39992E9E2F4D9B6300A8AA6D /* AppIcon 2.icon */; };
 		399CAA752F5CCB2900CB16D4 /* DailyVerse WatchApp Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 399CAA552F5CCB2800CB16D4 /* DailyVerse WatchApp Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		39A100092F50000100000001 /* VerseOfTheDayWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 39A100012F50000100000001 /* VerseOfTheDayWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		39A100092F50000100000001 /* VerseOfTheDayWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 39A100012F50000100000001 /* VerseOfTheDayWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,15 +69,15 @@
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		39A100082F50000100000001 /* Embed App Extensions */ = {
+		39A100082F50000100000001 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				39A100092F50000100000001 /* VerseOfTheDayWidget.appex in Embed App Extensions */,
+				39A100092F50000100000001 /* VerseOfTheDayWidget.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -253,7 +253,7 @@
 				393845442F37A41B001468D9 /* Sources */,
 				393845452F37A41B001468D9 /* Frameworks */,
 				393845462F37A41B001468D9 /* Resources */,
-				39A100082F50000100000001 /* Embed App Extensions */,
+				39A100082F50000100000001 /* Embed Foundation Extensions */,
 				399CAA762F5CCB2900CB16D4 /* Embed Watch Content */,
 			);
 			buildRules = (
@@ -419,7 +419,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					393845472F37A41B001468D9 = {
 						CreatedOnToolsVersion = 26.2;
@@ -671,6 +671,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -728,6 +729,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -894,8 +896,9 @@
 		399CAA772F5CCB2900CB16D4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon 2";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = PB8PTB6W8W;
@@ -927,8 +930,9 @@
 		399CAA782F5CCB2900CB16D4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon 2";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = PB8PTB6W8W;

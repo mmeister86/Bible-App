@@ -12,11 +12,13 @@ final class WatchDailyVerseViewModel {
 
     private let manager: WatchConnectivityManager
     private let defaults: UserDefaults
+    private var dailyVersePayload: DailyVerseTransferPayload?
 
     var verse: BibleResponse?
     var selectedTranslation: String = "web"
     var statusMessage: String?
     var isRandomVerseLoading = false
+    private(set) var isShowingRandomVerse = false
 
     init() {
         self.manager = .shared
@@ -76,22 +78,38 @@ final class WatchDailyVerseViewModel {
                 return
             }
 
-            let payload = DailyVerseTransferPayload(
-                verse: verse,
-                selectedTranslation: response.selectedTranslation,
-                generatedAt: response.generatedAt
-            )
-            applyDailyVersePayload(payload)
+            self.verse = verse
+            selectedTranslation = response.selectedTranslation
+            statusMessage = nil
+            isShowingRandomVerse = true
         } catch {
             statusMessage = error.localizedDescription
         }
     }
 
     private func applyDailyVersePayload(_ payload: DailyVerseTransferPayload) {
+        dailyVersePayload = payload
+        cache(payload: payload)
+
+        guard !isShowingRandomVerse else {
+            return
+        }
+
         verse = payload.verse
         selectedTranslation = payload.selectedTranslation
         statusMessage = nil
-        cache(payload: payload)
+    }
+
+    func showDailyVerse() {
+        guard let dailyVersePayload else {
+            statusMessage = "Kein gespeicherter Tagesvers verfuegbar."
+            return
+        }
+
+        verse = dailyVersePayload.verse
+        selectedTranslation = dailyVersePayload.selectedTranslation
+        statusMessage = nil
+        isShowingRandomVerse = false
     }
 
     private func updateStatusForReachability(_ isReachable: Bool) {
